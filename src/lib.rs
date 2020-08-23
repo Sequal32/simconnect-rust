@@ -60,9 +60,9 @@ impl SimConnector {
         }
     }
 
-    pub fn add_data_definition(&self, define_id: SIMCONNECT_DATA_DEFINITION_ID, datum_name: &str, units_name: &str, datum_type: SIMCONNECT_DATATYPE) -> bool {
+    pub fn add_data_definition(&self, define_id: SIMCONNECT_DATA_DEFINITION_ID, datum_name: &str, units_name: &str, datum_type: SIMCONNECT_DATATYPE, datum_id: u32) -> bool {
         unsafe {
-            let result = SimConnect_AddToDataDefinition(self.sim_connect_handle, define_id, as_c_string!(datum_name), as_c_string!(units_name), datum_type, 0.0, u32::MAX);
+            let result = SimConnect_AddToDataDefinition(self.sim_connect_handle, define_id, as_c_string!(datum_name), as_c_string!(units_name), datum_type, 0.0, datum_id);
             return result == 0;
         }
     }
@@ -70,6 +70,13 @@ impl SimConnector {
     pub fn request_data_on_sim_object(&self, request_id: SIMCONNECT_DATA_REQUEST_ID, define_id: SIMCONNECT_DATA_DEFINITION_ID, object_id: SIMCONNECT_OBJECT_ID, period: SIMCONNECT_CLIENT_DATA_PERIOD) -> bool {
         unsafe {
             let result = SimConnect_RequestDataOnSimObject(self.sim_connect_handle, request_id, define_id, object_id, period, 0, 0, 0, 0);
+            return result == 0;
+        }
+    }
+
+    pub fn set_data_on_sim_object(&self, define_id: SIMCONNECT_DATA_DEFINITION_ID, object_id: SIMCONNECT_OBJECT_ID, flags: SIMCONNECT_DATA_SET_FLAG, array_count: DWORD, size: DWORD, pntr: *mut ::std::os::raw::c_void) -> bool {
+        unsafe {
+            let result = SimConnect_SetDataOnSimObject(self.sim_connect_handle, define_id, object_id, flags, array_count, size, pntr);
             return result == 0;
         }
     }
