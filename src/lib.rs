@@ -81,6 +81,13 @@ impl SimConnector {
         }
     }
 
+    pub fn subcribe_to_system_event(&self, event_id: SIMCONNECT_CLIENT_EVENT_ID, event_name: &str) -> bool {
+        unsafe {
+            let result = SimConnect_SubscribeToSystemEvent(self.sim_connect_handle, event_id, as_c_string!(event_name));
+            return result == 0;
+        }
+    }
+
     pub fn get_next_message(&self) -> Result<DispatchResult, &str> {
         let mut data_buf: *mut SIMCONNECT_RECV = ptr::null_mut();
 
