@@ -88,6 +88,20 @@ impl SimConnector {
         }
     }
 
+    pub fn map_client_event_to_sim_event(&self, event_id: SIMCONNECT_CLIENT_EVENT_ID, event_name: &str) -> bool {
+        unsafe {
+            let result = SimConnect_MapClientEventToSimEvent(self.sim_connect_handle, event_id, as_c_string!(event_name));
+            return result == 0;
+        }
+    }
+
+    pub fn transmit_client_event(&self, object_id: SIMCONNECT_OBJECT_ID, event_id: SIMCONNECT_CLIENT_EVENT_ID, dw_data: DWORD, group_id: SIMCONNECT_NOTIFICATION_GROUP_ID, flags: SIMCONNECT_EVENT_FLAG) -> bool{
+        unsafe {
+            let result = SimConnect_TransmitClientEvent(self.sim_connect_handle, object_id, event_id, dw_data, group_id, flags);
+            return result == 0;
+        }
+    }
+
     pub fn get_next_message(&self) -> Result<DispatchResult, &str> {
         let mut data_buf: *mut SIMCONNECT_RECV = ptr::null_mut();
 
