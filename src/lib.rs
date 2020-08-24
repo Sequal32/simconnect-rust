@@ -118,9 +118,23 @@ impl SimConnector {
         }
     }
 
-    pub fn map_input_event_to_client_event(&self, group_id: SIMCONNECT_NOTIFICATION_GROUP_ID, input_definition: &str, down_event: SIMCONNECT_CLIENT_EVENT_ID, down_return_value: DWORD, up_event: SIMCONNECT_CLIENT_EVENT_ID, up_return_value: DWORD, maskable: bool) -> bool {
+    pub fn map_input_event_to_client_event(&self, group_id: SIMCONNECT_INPUT_GROUP_ID, input_definition: &str, down_event: SIMCONNECT_CLIENT_EVENT_ID, down_return_value: DWORD, up_event: SIMCONNECT_CLIENT_EVENT_ID, up_return_value: DWORD, maskable: bool) -> bool {
         unsafe {
             let result = SimConnect_MapInputEventToClientEvent(self.sim_connect_handle, group_id, as_c_string!(input_definition), down_event, down_return_value, up_event, up_return_value, maskable as i32);
+            return result == 0;
+        }
+    }
+
+    pub fn set_input_group_state(&self, group_id: SIMCONNECT_INPUT_GROUP_ID, state: DWORD) -> bool {
+        unsafe {
+            let result = SimConnect_SetInputGroupState(self.sim_connect_handle, group_id, state);
+            return result == 0;
+        }
+    }
+
+    pub fn set_input_priority(&self, group_id: SIMCONNECT_INPUT_GROUP_ID, priority: DWORD) -> bool {
+        unsafe {
+            let result = SimConnect_SetInputGroupPriority(self.sim_connect_handle, group_id, priority);
             return result == 0;
         }
     }
