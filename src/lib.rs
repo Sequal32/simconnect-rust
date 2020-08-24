@@ -12,6 +12,8 @@ macro_rules! as_c_string {
         std::ffi::CString::new($target).unwrap().as_ptr();
     };
 }
+
+#[derive(Debug)]
 pub enum DispatchResult {
     Null,
     Exception(*const SIMCONNECT_RECV_EXCEPTION),
@@ -98,6 +100,27 @@ impl SimConnector {
     pub fn transmit_client_event(&self, object_id: SIMCONNECT_OBJECT_ID, event_id: SIMCONNECT_CLIENT_EVENT_ID, dw_data: DWORD, group_id: SIMCONNECT_NOTIFICATION_GROUP_ID, flags: SIMCONNECT_EVENT_FLAG) -> bool{
         unsafe {
             let result = SimConnect_TransmitClientEvent(self.sim_connect_handle, object_id, event_id, dw_data, group_id, flags);
+            return result == 0;
+        }
+    }
+
+    pub fn add_client_event_to_notification_group(&self, group_id: SIMCONNECT_NOTIFICATION_GROUP_ID, event_id: SIMCONNECT_CLIENT_EVENT_ID, maskable: bool) -> bool {
+        unsafe {
+            let result = SimConnect_AddClientEventToNotificationGroup(self.sim_connect_handle, group_id, event_id, maskable as i32);
+            return result == 0;
+        }
+    }
+
+    pub fn set_notification_group_priority(&self, group_id: SIMCONNECT_NOTIFICATION_GROUP_ID, priority: DWORD) -> bool {
+        unsafe {
+            let result = SimConnect_SetNotificationGroupPriority(self.sim_connect_handle, group_id, priority);
+            return result == 0;
+        }
+    }
+
+    pub fn map_input_event_to_client_event(&self, group_id: SIMCONNECT_NOTIFICATION_GROUP_ID, input_definition: &str, down_event: SIMCONNECT_CLIENT_EVENT_ID, down_return_value: DWORD, up_event: SIMCONNECT_CLIENT_EVENT_ID, up_return_value: DWORD, maskable: bool) -> bool {
+        unsafe {
+            let result = SimConnect_MapInputEventToClientEvent(self.sim_connect_handle, group_id, as_c_string!(input_definition), down_event, down_return_value, up_event, up_return_value, maskable as i32);
             return result == 0;
         }
     }
