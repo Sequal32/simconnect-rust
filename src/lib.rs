@@ -1,5 +1,5 @@
 /*!
-The simconnectsdk crate provides rust bindings to retrieve and send information through SimConnect. 
+The simconnect crate provides rust bindings to retrieve and send information through SimConnect. 
 
 Documentation for SimConnect can be found by downloading the SDK for FS2020 or using P3D/FSX SDK documentations for reference (although some of their documentation does not apply for FS2020).
 
@@ -7,13 +7,13 @@ Documentation for SimConnect can be found by downloading the SDK for FS2020 or u
 Add this to your `Cargo.toml`
 ```toml
 [dependencies]
-simconnectsdk = "0.1"
+simconnect = "0.1"
 ```
 
 # Simple Example
 *Note: You must have SimConnect.dll in your current working directory to be able to successfully use SimConnect*
 ```rust
-use simconnectsdk;
+use simconnect;
 use std::time::Duration;
 use std::thread::sleep;
 use std::mem::transmute_copy;
@@ -24,16 +24,16 @@ struct DataStruct {
   alt: f64,
 }
 
-let mut conn = simconnectsdk::SimConnector::new();
+let mut conn = simconnect::SimConnector::new();
 conn.connect("Simple Program"); // Intialize connection with SimConnect
-conn.add_data_definition(0, "PLANE LATITUDE", "Degrees", simconnectsdk::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX); // Assign a sim variable to a client defined id
-conn.add_data_definition(0, "PLANE LONGITUDE", "Degrees", simconnectsdk::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX);
-conn.add_data_definition(0, "PLANE ALTITUDE", "Feet", simconnectsdk::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX); //define_id, units, data_type, datum_id
-conn.request_data_on_sim_object(0, 0, 0, simconnectsdk::SIMCONNECT_PERIOD_SIMCONNECT_PERIOD_SIM_FRAME); //request_id, define_id, object_id (user), period - tells simconnect to send data for the defined id and on the user aircraft
+conn.add_data_definition(0, "PLANE LATITUDE", "Degrees", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX); // Assign a sim variable to a client defined id
+conn.add_data_definition(0, "PLANE LONGITUDE", "Degrees", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX);
+conn.add_data_definition(0, "PLANE ALTITUDE", "Feet", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX); //define_id, units, data_type, datum_id
+conn.request_data_on_sim_object(0, 0, 0, simconnect::SIMCONNECT_PERIOD_SIMCONNECT_PERIOD_SIM_FRAME); //request_id, define_id, object_id (user), period - tells simconnect to send data for the defined id and on the user aircraft
 
 loop {
   match conn.get_next_message() {
-    Ok(simconnectsdk::DispatchResult::SimobjectData(data)) => {
+    Ok(simconnect::DispatchResult::SimobjectData(data)) => {
       unsafe {
         match (*data).dwDefineID {
           0 => {
@@ -59,7 +59,7 @@ loop {
 use std::ptr;
 use std::mem;
 
-include!("../bindings.rs"); 
+include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 macro_rules! as_c_string {
     ($target:expr) => {
