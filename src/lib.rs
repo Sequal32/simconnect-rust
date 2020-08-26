@@ -1,3 +1,57 @@
+/*!
+The simconnectsdk crate provides rust bindings to retrieve and send information through SimConnect. 
+
+Documentation for SimConnect can be found by downloading the SDK for FS2020 or using P3D/FSX SDK documentations for reference (although some of their documentation does not apply for FS2020).
+
+# Setup
+Add this to your `Cargo.toml`
+```toml
+[dependencies]
+simconnectsdk = "0.1"
+```
+
+# Simple Example
+*Note: You must have SimConnect.dll in your current working directory to be able to successfully use SimConnect*
+```rust
+use simconnectsdk;
+use std::time::Duration;
+use std::thread::sleep;
+use std::mem::transmute_copy;
+
+struct DataStruct {
+  lat: f64,
+  lon: f64,
+  alt: f64,
+}
+
+let mut conn = simconnectsdk::SimConnector::new();
+conn.connect("Simple Program"); // Intialize connection with SimConnect
+conn.add_data_definition(0, "PLANE LATITUDE", "Degrees", simconnectsdk::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX); // Assign a sim variable to a client defined id
+conn.add_data_definition(0, "PLANE LONGITUDE", "Degrees", simconnectsdk::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX);
+conn.add_data_definition(0, "PLANE ALTITUDE", "Feet", simconnectsdk::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX); //define_id, units, data_type, datum_id
+conn.request_data_on_sim_object(0, 0, 0, simconnectsdk::SIMCONNECT_PERIOD_SIMCONNECT_PERIOD_SIM_FRAME); //request_id, define_id, object_id (user), period - tells simconnect to send data for the defined id and on the user aircraft
+
+loop {
+  match conn.get_next_message() {
+    Ok(simconnectsdk::DispatchResult::SimobjectData(data)) => {
+      unsafe {
+        match (*data).dwDefineID {
+          0 => {
+            let sim_data: DataStruct = transmute_copy(&(*data).dwData);
+            println!("{:?} {:?} {:?}", sim_data.lat, sim_data.lon, sim_data.alt);
+          },
+          _ => ()
+        }
+      }
+    },
+    _ => ()
+  }
+  
+  sleep(Duration::from_millis(16)); // Will use up lots of CPU if this is not included, as get_next_message() is non-blocking
+}
+```
+!*/
+
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
@@ -13,6 +67,7 @@ macro_rules! as_c_string {
     };
 }
 
+/// Enumerations for all the possible data types received from SimConnect
 #[derive(Debug)]
 pub enum DispatchResult {
     Null,
@@ -44,6 +99,8 @@ pub enum DispatchResult {
     EventRaceLap(*const SIMCONNECT_RECV_EVENT_RACE_LAP),
 }
 
+/// Handles communication between the client program and SimConnect
+/// For more information about the functions provided, refer to the SimConnect SDK Documentation. The functions name closely match up with those defined there.
 pub struct SimConnector {
     sim_connect_handle: HANDLE
 }
@@ -406,6 +463,7 @@ impl SimConnector {
         }
     }
 
+    /// Retrieves the next message from SimConnect. Nonblocking.
     pub fn get_next_message(&self) -> Result<DispatchResult, &str> {
         let mut data_buf: *mut SIMCONNECT_RECV = ptr::null_mut();
 

@@ -1,5 +1,5 @@
 fn main() {
-    println!("cargo:rustc-link-search=simconnectsdk/libsrc/lib");
+    println!("cargo:rustc-link-search=libsrc/lib");
     println!("cargo:rustc-link-lib=static=SimConnect");
 
     let bindings = bindgen::Builder::default()
