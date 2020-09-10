@@ -71,32 +71,32 @@ macro_rules! as_c_string {
 #[derive(Debug)]
 pub enum DispatchResult {
     Null,
-    Exception(*const SIMCONNECT_RECV_EXCEPTION),
-    Open(*const SIMCONNECT_RECV_OPEN),
-    Quit(*const SIMCONNECT_RECV_QUIT),
-    Event(*const SIMCONNECT_RECV_EVENT),
-    EventObjectAddRemove(*const SIMCONNECT_RECV_EVENT_OBJECT_ADDREMOVE),
-    EventFilename(*const SIMCONNECT_RECV_EVENT_FILENAME),
-    EventFrame(*const SIMCONNECT_RECV_EVENT_FRAME),
-    SimobjectData(*const SIMCONNECT_RECV_SIMOBJECT_DATA),
-    SimobjectDataBytype(*const SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE),
-    WeatherObservation(*const SIMCONNECT_RECV_WEATHER_OBSERVATION),
-    CloudState(*const SIMCONNECT_RECV_CLOUD_STATE),
-    AssignedObjectId(*const SIMCONNECT_RECV_ASSIGNED_OBJECT_ID),
-    ReservedKey(*const SIMCONNECT_RECV_RESERVED_KEY),
-    CustomAction(*const SIMCONNECT_RECV_CUSTOM_ACTION),
-    SystemState(*const SIMCONNECT_RECV_SYSTEM_STATE),
-    ClientData(*const SIMCONNECT_RECV_CLIENT_DATA),
-    EventWeatherMode(*const SIMCONNECT_RECV_EVENT_WEATHER_MODE),
-    AirportList(*const SIMCONNECT_RECV_AIRPORT_LIST),
-    VorList(*const SIMCONNECT_RECV_VOR_LIST),
-    NdbList(*const SIMCONNECT_RECV_NDB_LIST),
-    WaypointList(*const SIMCONNECT_RECV_WAYPOINT_LIST),
-    EventMultiplayerServerStarted(*const SIMCONNECT_RECV_EVENT_MULTIPLAYER_SERVER_STARTED),
-    EventMultiplayerClientStarted(*const SIMCONNECT_RECV_EVENT_MULTIPLAYER_CLIENT_STARTED),
-    EventMultiplayerSessionEnded(*const SIMCONNECT_RECV_EVENT_MULTIPLAYER_SESSION_ENDED),
-    EventRaceEnd(*const SIMCONNECT_RECV_EVENT_RACE_END),
-    EventRaceLap(*const SIMCONNECT_RECV_EVENT_RACE_LAP),
+    Exception(SIMCONNECT_RECV_EXCEPTION),
+    Open(SIMCONNECT_RECV_OPEN),
+    Quit(SIMCONNECT_RECV_QUIT),
+    Event(SIMCONNECT_RECV_EVENT),
+    EventObjectAddRemove(SIMCONNECT_RECV_EVENT_OBJECT_ADDREMOVE),
+    EventFilename(SIMCONNECT_RECV_EVENT_FILENAME),
+    EventFrame(SIMCONNECT_RECV_EVENT_FRAME),
+    SimobjectData(SIMCONNECT_RECV_SIMOBJECT_DATA),
+    SimobjectDataBytype(SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE),
+    WeatherObservation(SIMCONNECT_RECV_WEATHER_OBSERVATION),
+    CloudState(SIMCONNECT_RECV_CLOUD_STATE),
+    AssignedObjectId(SIMCONNECT_RECV_ASSIGNED_OBJECT_ID),
+    ReservedKey(SIMCONNECT_RECV_RESERVED_KEY),
+    CustomAction(SIMCONNECT_RECV_CUSTOM_ACTION),
+    SystemState(SIMCONNECT_RECV_SYSTEM_STATE),
+    ClientData(SIMCONNECT_RECV_CLIENT_DATA),
+    EventWeatherMode(SIMCONNECT_RECV_EVENT_WEATHER_MODE),
+    AirportList(SIMCONNECT_RECV_AIRPORT_LIST),
+    VorList(SIMCONNECT_RECV_VOR_LIST),
+    NdbList(SIMCONNECT_RECV_NDB_LIST),
+    WaypointList(SIMCONNECT_RECV_WAYPOINT_LIST),
+    EventMultiplayerServerStarted(SIMCONNECT_RECV_EVENT_MULTIPLAYER_SERVER_STARTED),
+    EventMultiplayerClientStarted(SIMCONNECT_RECV_EVENT_MULTIPLAYER_CLIENT_STARTED),
+    EventMultiplayerSessionEnded(SIMCONNECT_RECV_EVENT_MULTIPLAYER_SESSION_ENDED),
+    EventRaceEnd(SIMCONNECT_RECV_EVENT_RACE_END),
+    EventRaceLap(SIMCONNECT_RECV_EVENT_RACE_LAP),
 }
 
 /// Handles communication between the client program and SimConnect
@@ -157,6 +157,13 @@ impl SimConnector {
     pub fn clear_data_definition(&self, define_id: SIMCONNECT_DATA_DEFINITION_ID) -> bool {
         unsafe {
             let result = SimConnect_ClearDataDefinition(self.sim_connect_handle, define_id);
+            return result == 0;
+        }
+    }
+
+    pub fn create_client_data(&self, data_id: SIMCONNECT_CLIENT_DATA_ID, size: DWORD, flags: SIMCONNECT_CREATE_CLIENT_DATA_FLAG) -> bool {
+        unsafe {
+            let result = SimConnect_CreateClientData(self.sim_connect_handle, data_id, size, flags);
             return result == 0;
         }
     }
@@ -476,110 +483,32 @@ impl SimConnector {
 
             return match (*data_buf).dwID as SIMCONNECT_RECV_ID {
                 SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_NULL => Ok(DispatchResult::Null),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EXCEPTION => {
-                    let point:*const SIMCONNECT_RECV_EXCEPTION = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::Exception(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_OPEN => {
-                    let point:*const SIMCONNECT_RECV_OPEN = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::Open(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_QUIT => {
-                    let point:*const SIMCONNECT_RECV_QUIT = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::Quit(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT => {
-                    let point:*const SIMCONNECT_RECV_EVENT = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::Event(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_OBJECT_ADDREMOVE => {
-                    let point:*const SIMCONNECT_RECV_EVENT_OBJECT_ADDREMOVE = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::EventObjectAddRemove(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_FILENAME => {
-                    let point:*const SIMCONNECT_RECV_EVENT_FILENAME = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::EventFilename(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_FRAME => {
-                    let point:*const SIMCONNECT_RECV_EVENT_FRAME = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::EventFrame(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SIMOBJECT_DATA => {
-                    let point:*const SIMCONNECT_RECV_SIMOBJECT_DATA = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::SimobjectData(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SIMOBJECT_DATA_BYTYPE => {
-                    let point:*const SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::SimobjectDataBytype(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_WEATHER_OBSERVATION  => {
-                    let point:*const SIMCONNECT_RECV_WEATHER_OBSERVATION = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::WeatherObservation(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CLOUD_STATE  => {
-                    let point:*const SIMCONNECT_RECV_CLOUD_STATE = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::CloudState(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_ASSIGNED_OBJECT_ID  => {
-                    let point:*const SIMCONNECT_RECV_ASSIGNED_OBJECT_ID = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::AssignedObjectId(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_RESERVED_KEY  => {
-                    let point:*const SIMCONNECT_RECV_RESERVED_KEY = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::ReservedKey(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CUSTOM_ACTION  => {
-                    let point:*const SIMCONNECT_RECV_CUSTOM_ACTION = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::CustomAction(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SYSTEM_STATE  => {
-                    let point:*const SIMCONNECT_RECV_SYSTEM_STATE = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::SystemState(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CLIENT_DATA  => {
-                    let point:*const SIMCONNECT_RECV_CLIENT_DATA = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::ClientData(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_WEATHER_MODE  => {
-                    let point:*const SIMCONNECT_RECV_EVENT_WEATHER_MODE = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::EventWeatherMode(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_AIRPORT_LIST  => {
-                    let point:*const SIMCONNECT_RECV_AIRPORT_LIST = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::AirportList(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_VOR_LIST  => {
-                    let point:*const SIMCONNECT_RECV_VOR_LIST = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::VorList(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_NDB_LIST  => {
-                    let point:*const SIMCONNECT_RECV_NDB_LIST = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::NdbList(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_WAYPOINT_LIST  => {
-                    let point:*const SIMCONNECT_RECV_WAYPOINT_LIST = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::WaypointList(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_SERVER_STARTED => {
-                    let point:*const SIMCONNECT_RECV_EVENT_MULTIPLAYER_SERVER_STARTED = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::EventMultiplayerServerStarted(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_CLIENT_STARTED => {
-                    let point:*const SIMCONNECT_RECV_EVENT_MULTIPLAYER_CLIENT_STARTED = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::EventMultiplayerClientStarted(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_SESSION_ENDED => {
-                    let point:*const SIMCONNECT_RECV_EVENT_MULTIPLAYER_SESSION_ENDED = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::EventMultiplayerSessionEnded(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_RACE_END  => {
-                    let point:*const SIMCONNECT_RECV_EVENT_RACE_END = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::EventRaceEnd(point));
-                }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_RACE_LAP  => {
-                    let point:*const SIMCONNECT_RECV_EVENT_RACE_LAP = mem::transmute_copy(&data_buf);
-                    return Ok(DispatchResult::EventRaceLap(point));
-                }
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EXCEPTION => Ok(DispatchResult::Exception(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_OPEN => Ok(DispatchResult::Open(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_QUIT => Ok(DispatchResult::Quit(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT => Ok(DispatchResult::Event(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_OBJECT_ADDREMOVE => Ok(DispatchResult::EventObjectAddRemove(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_FILENAME => Ok(DispatchResult::EventFilename(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_FRAME => Ok(DispatchResult::EventFrame(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SIMOBJECT_DATA => Ok(DispatchResult::SimobjectData(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SIMOBJECT_DATA_BYTYPE => Ok(DispatchResult::SimobjectDataBytype(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_WEATHER_OBSERVATION => Ok(DispatchResult::WeatherObservation(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CLOUD_STATE => Ok(DispatchResult::CloudState(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_ASSIGNED_OBJECT_ID => Ok(DispatchResult::AssignedObjectId(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_RESERVED_KEY => Ok(DispatchResult::ReservedKey(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CUSTOM_ACTION => Ok(DispatchResult::CustomAction(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SYSTEM_STATE => Ok(DispatchResult::SystemState(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CLIENT_DATA => Ok(DispatchResult::ClientData(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_WEATHER_MODE => Ok(DispatchResult::EventWeatherMode(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_AIRPORT_LIST => Ok(DispatchResult::AirportList(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_VOR_LIST => Ok(DispatchResult::VorList(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_NDB_LIST => Ok(DispatchResult::NdbList(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_WAYPOINT_LIST => Ok(DispatchResult::WaypointList(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_SERVER_STARTED => Ok(DispatchResult::EventMultiplayerServerStarted(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_CLIENT_STARTED => Ok(DispatchResult::EventMultiplayerClientStarted(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_SESSION_ENDED => Ok(DispatchResult::EventMultiplayerSessionEnded(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_RACE_END => Ok(DispatchResult::EventRaceEnd(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_RACE_LAP => Ok(DispatchResult::EventRaceLap(mem::transmute_copy(&(*data_buf)))),
                 _ => Err("Unhandled RECV_ID")
             }
         }
