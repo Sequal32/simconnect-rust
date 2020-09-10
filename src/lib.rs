@@ -59,6 +59,8 @@ loop {
 use std::ptr;
 use std::mem;
 
+use mem::transmute_copy;
+
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 macro_rules! as_c_string {
@@ -69,38 +71,39 @@ macro_rules! as_c_string {
 
 /// Enumerations for all the possible data types received from SimConnect
 #[derive(Debug)]
-pub enum DispatchResult {
+pub enum DispatchResult<'a> {
     Null,
-    Exception(SIMCONNECT_RECV_EXCEPTION),
-    Open(SIMCONNECT_RECV_OPEN),
-    Quit(SIMCONNECT_RECV_QUIT),
-    Event(SIMCONNECT_RECV_EVENT),
-    EventObjectAddRemove(SIMCONNECT_RECV_EVENT_OBJECT_ADDREMOVE),
-    EventFilename(SIMCONNECT_RECV_EVENT_FILENAME),
-    EventFrame(SIMCONNECT_RECV_EVENT_FRAME),
-    SimobjectData(SIMCONNECT_RECV_SIMOBJECT_DATA),
-    SimobjectDataBytype(SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE),
-    WeatherObservation(SIMCONNECT_RECV_WEATHER_OBSERVATION),
-    CloudState(SIMCONNECT_RECV_CLOUD_STATE),
-    AssignedObjectId(SIMCONNECT_RECV_ASSIGNED_OBJECT_ID),
-    ReservedKey(SIMCONNECT_RECV_RESERVED_KEY),
-    CustomAction(SIMCONNECT_RECV_CUSTOM_ACTION),
-    SystemState(SIMCONNECT_RECV_SYSTEM_STATE),
-    ClientData(SIMCONNECT_RECV_CLIENT_DATA),
-    EventWeatherMode(SIMCONNECT_RECV_EVENT_WEATHER_MODE),
-    AirportList(SIMCONNECT_RECV_AIRPORT_LIST),
-    VorList(SIMCONNECT_RECV_VOR_LIST),
-    NdbList(SIMCONNECT_RECV_NDB_LIST),
-    WaypointList(SIMCONNECT_RECV_WAYPOINT_LIST),
-    EventMultiplayerServerStarted(SIMCONNECT_RECV_EVENT_MULTIPLAYER_SERVER_STARTED),
-    EventMultiplayerClientStarted(SIMCONNECT_RECV_EVENT_MULTIPLAYER_CLIENT_STARTED),
-    EventMultiplayerSessionEnded(SIMCONNECT_RECV_EVENT_MULTIPLAYER_SESSION_ENDED),
-    EventRaceEnd(SIMCONNECT_RECV_EVENT_RACE_END),
-    EventRaceLap(SIMCONNECT_RECV_EVENT_RACE_LAP),
+    Exception(&'a SIMCONNECT_RECV_EXCEPTION),
+    Open(&'a SIMCONNECT_RECV_OPEN),
+    Quit(&'a SIMCONNECT_RECV_QUIT),
+    Event(&'a SIMCONNECT_RECV_EVENT),
+    EventObjectAddRemove(&'a SIMCONNECT_RECV_EVENT_OBJECT_ADDREMOVE),
+    EventFilename(&'a SIMCONNECT_RECV_EVENT_FILENAME),
+    EventFrame(&'a SIMCONNECT_RECV_EVENT_FRAME),
+    SimobjectData(&'a SIMCONNECT_RECV_SIMOBJECT_DATA),
+    SimobjectDataBytype(&'a SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE),
+    WeatherObservation(&'a SIMCONNECT_RECV_WEATHER_OBSERVATION),
+    CloudState(&'a SIMCONNECT_RECV_CLOUD_STATE),
+    AssignedObjectId(&'a SIMCONNECT_RECV_ASSIGNED_OBJECT_ID),
+    ReservedKey(&'a SIMCONNECT_RECV_RESERVED_KEY),
+    CustomAction(&'a SIMCONNECT_RECV_CUSTOM_ACTION),
+    SystemState(&'a SIMCONNECT_RECV_SYSTEM_STATE),
+    ClientData(&'a SIMCONNECT_RECV_CLIENT_DATA),
+    EventWeatherMode(&'a SIMCONNECT_RECV_EVENT_WEATHER_MODE),
+    AirportList(&'a SIMCONNECT_RECV_AIRPORT_LIST),
+    VorList(&'a SIMCONNECT_RECV_VOR_LIST),
+    NdbList(&'a SIMCONNECT_RECV_NDB_LIST),
+    WaypointList(&'a SIMCONNECT_RECV_WAYPOINT_LIST),
+    EventMultiplayerServerStarted(&'a SIMCONNECT_RECV_EVENT_MULTIPLAYER_SERVER_STARTED),
+    EventMultiplayerClientStarted(&'a SIMCONNECT_RECV_EVENT_MULTIPLAYER_CLIENT_STARTED),
+    EventMultiplayerSessionEnded(&'a SIMCONNECT_RECV_EVENT_MULTIPLAYER_SESSION_ENDED),
+    EventRaceEnd(&'a SIMCONNECT_RECV_EVENT_RACE_END),
+    EventRaceLap(&'a SIMCONNECT_RECV_EVENT_RACE_LAP),
 }
 
 /// Handles communication between the client program and SimConnect
 /// For more information about the functions provided, refer to the SimConnect SDK Documentation. The functions name closely match up with those defined there.
+#[derive(Copy, Clone)]
 pub struct SimConnector {
     sim_connect_handle: HANDLE
 }
@@ -483,32 +486,33 @@ impl SimConnector {
 
             return match (*data_buf).dwID as SIMCONNECT_RECV_ID {
                 SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_NULL => Ok(DispatchResult::Null),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EXCEPTION => Ok(DispatchResult::Exception(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_OPEN => Ok(DispatchResult::Open(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_QUIT => Ok(DispatchResult::Quit(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT => Ok(DispatchResult::Event(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_OBJECT_ADDREMOVE => Ok(DispatchResult::EventObjectAddRemove(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_FILENAME => Ok(DispatchResult::EventFilename(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_FRAME => Ok(DispatchResult::EventFrame(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SIMOBJECT_DATA => Ok(DispatchResult::SimobjectData(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SIMOBJECT_DATA_BYTYPE => Ok(DispatchResult::SimobjectDataBytype(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_WEATHER_OBSERVATION => Ok(DispatchResult::WeatherObservation(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CLOUD_STATE => Ok(DispatchResult::CloudState(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_ASSIGNED_OBJECT_ID => Ok(DispatchResult::AssignedObjectId(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_RESERVED_KEY => Ok(DispatchResult::ReservedKey(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CUSTOM_ACTION => Ok(DispatchResult::CustomAction(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SYSTEM_STATE => Ok(DispatchResult::SystemState(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CLIENT_DATA => Ok(DispatchResult::ClientData(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_WEATHER_MODE => Ok(DispatchResult::EventWeatherMode(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_AIRPORT_LIST => Ok(DispatchResult::AirportList(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_VOR_LIST => Ok(DispatchResult::VorList(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_NDB_LIST => Ok(DispatchResult::NdbList(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_WAYPOINT_LIST => Ok(DispatchResult::WaypointList(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_SERVER_STARTED => Ok(DispatchResult::EventMultiplayerServerStarted(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_CLIENT_STARTED => Ok(DispatchResult::EventMultiplayerClientStarted(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_SESSION_ENDED => Ok(DispatchResult::EventMultiplayerSessionEnded(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_RACE_END => Ok(DispatchResult::EventRaceEnd(mem::transmute_copy(&(*data_buf)))),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_RACE_LAP => Ok(DispatchResult::EventRaceLap(mem::transmute_copy(&(*data_buf)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EXCEPTION => Ok(DispatchResult::Exception(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EXCEPTION)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_OPEN => Ok(DispatchResult::Open(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_OPEN)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_QUIT => Ok(DispatchResult::Quit(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_QUIT)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT => Ok(DispatchResult::Event(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EVENT)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_OBJECT_ADDREMOVE => Ok(DispatchResult::EventObjectAddRemove(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EVENT_OBJECT_ADDREMOVE)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_FILENAME => Ok(DispatchResult::EventFilename(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EVENT_FILENAME)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_FRAME => Ok(DispatchResult::EventFrame(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EVENT_FRAME)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SIMOBJECT_DATA => Ok(DispatchResult::SimobjectData(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_SIMOBJECT_DATA)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SIMOBJECT_DATA_BYTYPE => Ok(DispatchResult::SimobjectDataBytype(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_WEATHER_OBSERVATION => Ok(DispatchResult::WeatherObservation(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_WEATHER_OBSERVATION)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CLOUD_STATE => Ok(DispatchResult::CloudState(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_CLOUD_STATE)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_ASSIGNED_OBJECT_ID => Ok(DispatchResult::AssignedObjectId(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_ASSIGNED_OBJECT_ID)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_RESERVED_KEY => Ok(DispatchResult::ReservedKey(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_RESERVED_KEY)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CUSTOM_ACTION => Ok(DispatchResult::CustomAction(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_CUSTOM_ACTION)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SYSTEM_STATE => Ok(DispatchResult::SystemState(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_SYSTEM_STATE)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CLIENT_DATA => Ok(DispatchResult::ClientData(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_CLIENT_DATA)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_WEATHER_MODE => Ok(DispatchResult::EventWeatherMode(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EVENT_WEATHER_MODE)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_AIRPORT_LIST => Ok(DispatchResult::AirportList(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_AIRPORT_LIST)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_VOR_LIST => Ok(DispatchResult::VorList(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_VOR_LIST)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_NDB_LIST => Ok(DispatchResult::NdbList(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_NDB_LIST)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_WAYPOINT_LIST => Ok(DispatchResult::WaypointList(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_WAYPOINT_LIST)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_SERVER_STARTED => Ok(DispatchResult::EventMultiplayerServerStarted(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EVENT_MULTIPLAYER_SERVER_STARTED)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_CLIENT_STARTED => Ok(DispatchResult::EventMultiplayerClientStarted(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EVENT_MULTIPLAYER_CLIENT_STARTED)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_SESSION_ENDED => Ok(DispatchResult::EventMultiplayerSessionEnded(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EVENT_MULTIPLAYER_SESSION_ENDED)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_RACE_END => Ok(DispatchResult::EventRaceEnd(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EVENT_RACE_END)))),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_RACE_LAP => Ok(DispatchResult::EventRaceLap(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EVENT_RACE_LAP)))),
+
                 _ => Err("Unhandled RECV_ID")
             }
         }
