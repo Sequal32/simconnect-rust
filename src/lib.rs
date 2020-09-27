@@ -57,9 +57,7 @@ loop {
 #![allow(non_snake_case)]
 
 use std::ptr;
-use std::mem;
-
-use mem::transmute_copy;
+use std::mem::transmute_copy;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
@@ -107,11 +105,17 @@ pub struct SimConnector {
     sim_connect_handle: HANDLE
 }
 
-impl SimConnector {
-    pub fn new() -> Self {
+impl Default for SimConnector {
+    fn default() -> Self {
         Self {
             sim_connect_handle: std::ptr::null_mut()
         }
+    }
+}
+
+impl SimConnector {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn connect(&mut self, program_name: &str) -> bool {
