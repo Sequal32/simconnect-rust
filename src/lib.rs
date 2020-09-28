@@ -525,9 +525,7 @@ impl SimConnector {
 impl Drop for SimConnector {
     fn drop(&mut self) {
         if !self.sim_connect_handle.is_null() {
-            unsafe {
-                SimConnect_Close(self.sim_connect_handle);
-            }
+            self.close();
         }
     }
 }
