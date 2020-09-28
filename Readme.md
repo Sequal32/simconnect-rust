@@ -3,8 +3,9 @@
 Add this to your `Cargo.toml`
 ```toml
 [dependencies]
-simconnect = "0.1"
+simconnect = "0.1.3"
 ```
+**Note**: This crate is in its early stages and API breaking changes can be pushed at any moment. In this case, it's recommended to use the exact version "0.X.X".
 ## Building
 *The SimConnect binaries are included within this repository, but they may not be up to date.*
 
@@ -13,7 +14,7 @@ simconnect = "0.1"
 3. `use simconnect`
 
 ### Sample Program
-*Note: You must have SimConnect.dll in your current working directory to be able to successfully use SimConnect*
+*Note: You must have SimConnect.dll in your current working directory or in the exe directory to be able to successfully use SimConnect*
 ```rust
 use simconnect;
 use std::time::Duration;
@@ -31,15 +32,15 @@ conn.connect("Simple Program"); // Intialize connection with SimConnect
 conn.add_data_definition(0, "PLANE LATITUDE", "Degrees", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX); // Assign a sim variable to a client defined id
 conn.add_data_definition(0, "PLANE LONGITUDE", "Degrees", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX);
 conn.add_data_definition(0, "PLANE ALTITUDE", "Feet", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX); //define_id, units, data_type, datum_id
-conn.request_data_on_sim_object(0, 0, 0, simconnect::SIMCONNECT_PERIOD_SIMCONNECT_PERIOD_SIM_FRAME); //request_id, define_id, object_id (user), period - tells simconnect to send data for the defined id and on the user aircraft
+conn.request_data_on_sim_object(0, 0, 0, simconnect::SIMCONNECT_PERIOD_SIMCONNECT_PERIOD_SIM_FRAME, 0, 0, 0, 0); //request_id, define_id, object_id (user), period, falgs, origin, interval, limit - tells simconnect to send data for the defined id and on the user aircraft
 
 loop {
   match conn.get_next_message() {
     Ok(simconnect::DispatchResult::SimobjectData(data)) => {
       unsafe {
-        match (*data).dwDefineID {
+        match data.dwDefineID {
           0 => {
-            let sim_data: DataStruct = transmute_copy(&(*data).dwData);
+            let sim_data: DataStruct = transmute_copy(&data.dwData);
             println!("{:?} {:?} {:?}", sim_data.lat, sim_data.lon, sim_data.alt);
           },
           _ => ()
