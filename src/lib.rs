@@ -103,7 +103,6 @@ pub enum DispatchResult<'a> {
 
 /// Handles communication between the client program and SimConnect
 /// For more information about the functions provided, refer to the SimConnect SDK Documentation. The functions name closely match up with those defined there.
-#[derive(Copy, Clone)]
 pub struct SimConnector {
     sim_connect_handle: HANDLE
 }
@@ -514,6 +513,16 @@ impl SimConnector {
                 SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_RACE_LAP => Ok(DispatchResult::EventRaceLap(transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EVENT_RACE_LAP)))),
 
                 _ => Err("Unhandled RECV_ID")
+            }
+        }
+    }
+}
+
+impl Drop for SimConnector {
+    fn drop(&mut self) {
+        if !self.sim_connect_handle.is_null() {
+            unsafe {
+                SimConnect_Close(self.sim_connect_handle);
             }
         }
     }
