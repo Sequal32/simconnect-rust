@@ -120,7 +120,11 @@ impl SimConnector {
 
     pub fn connect(&mut self, program_name: &str) -> bool {
         unsafe {
-            SimConnect_Open(&mut self.sim_connect_handle, as_c_string!(program_name), ptr::null_mut(), 0, std::ptr::null_mut(), 0);
+            let temp_1 = ptr::null_mut();
+            let temp_2 = ptr::null_mut();
+
+            SimConnect_Open(&mut self.sim_connect_handle, as_c_string!(program_name), temp_1, 0, temp_2, 0);
+
             return !self.sim_connect_handle.is_null();
         }
     }
