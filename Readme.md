@@ -55,3 +55,17 @@ loop {
 ```
 ### Remarks
 I have not tested every single function from the api. If you find an error, feel free to make an issue or a pull request.
+
+### 32-Bit Support
+
+It is possible to build & target 32-bit versions of Prepar3D (All other 32-bit flight sims should be possible but I have not tested those).
+
+Requirements:
+
+- [32-bit Clang (tested with 11.0.1)](https://github.com/llvm/llvm-project/releases/tag/llvmorg-11.0.1)
+- 32-bit windows rust target. Run `rustup target add stable-i686-pc-windows-msvc`
+- Visual Studio 2012 Command Prompt. Should be available if you install Visual Studio 2013. [Available here](https://visualstudio.microsoft.com/vs/older-downloads/)
+- Building:
+  - From VS2012 Command Prompt, run `cargo +stable-i686-pc-windows-msvc build`
+- Running:
+  - From VS2012 Command Prompt, run `cargo +stable-i686-pc-windows-msvc run`
