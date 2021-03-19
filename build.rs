@@ -2,7 +2,11 @@ use std::{env, path::PathBuf};
 
 fn main() {
     println!("cargo:rustc-link-search=libsrc/lib");
+    println!("cargo:rustc-link-lib=static=ltod");
     println!("cargo:rustc-link-lib=static=SimConnect");
+    println!("cargo:rustc-link-lib=static=user32");
+    println!("cargo:rustc-link-lib=static=ole32");
+    println!("cargo:rustc-link-lib=static=shell32");
 
     let bindings = bindgen::Builder::default()
         .header("libsrc/include/SimConnect.hpp")
