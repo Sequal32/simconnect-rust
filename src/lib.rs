@@ -439,7 +439,11 @@ impl SimConnector {
 
         unsafe {
             let result = SimConnect_GetNextDispatch(self.sim_connect_handle, &mut data_buf, size_buf_pointer);
-            if result != 0 {return Err("Failed getting data!");}
+            if result != 0 {
+                // Right now we're getting E_FAIL back from GetNextDispatch
+                //eprintln!("Couldnt get data: {}", result);
+                return Err("Failed getting data!");
+            }
 
             return match (*data_buf).dwID as SIMCONNECT_RECV_ID {
                 SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_NULL => Ok(DispatchResult::Null),
