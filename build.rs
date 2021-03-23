@@ -82,7 +82,6 @@ fn main() {
         .whitelist_type("SIMCONNECT_TEXT_RESULT")
         .whitelist_type("SIMCONNECT_WEATHER_MODE")
         .whitelist_type("SIMCONNECT_FACILITY_LIST_TYPE")
-
         .whitelist_type("SIMCONNECT_RECV")
         .whitelist_type("SIMCONNECT_RECV_EXCEPTION")
         .whitelist_type("SIMCONNECT_RECV_OPEN")
@@ -116,8 +115,6 @@ fn main() {
         .whitelist_type("SIMCONNECT_DATA_FACILITY_VOR")
         .whitelist_type("SIMCONNECT_RECV_VOR_LIST")
         .whitelist_type("SIMCONNECT_RECV_PICK")
-
-        
         .whitelist_function("SimConnect_MapClientEventToSimEvent")
         .whitelist_function("SimConnect_TransmitClientEvent")
         .whitelist_function("SimConnect_SetSystemEventState")
@@ -190,16 +187,13 @@ fn main() {
         .whitelist_function("SimConnect_SubscribeToFacilities")
         .whitelist_function("SimConnect_UnsubscribeToFacilities")
         .whitelist_function("SimConnect_RequestFacilitiesList")
-        
         .whitelist_type("SIMCONNECT_DATA_RACE_RESULT")
         .whitelist_type("SIMCONNECT_DATA_INITPOSITION")
         .whitelist_type("SIMCONNECT_DATA_MARKERSTATE")
         .whitelist_type("SIMCONNECT_DATA_WAYPOINT")
         .whitelist_type("SIMCONNECT_DATA_LATLONALT")
         .whitelist_type("SIMCONNECT_DATA_XYZ")
-
         .impl_debug(true)
-
         .generate()
         .expect("Unable to generate bindings");
 
