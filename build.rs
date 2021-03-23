@@ -8,6 +8,9 @@ fn main() {
     println!("cargo:rustc-link-lib=static=ole32");
     println!("cargo:rustc-link-lib=static=shell32");
 
+    println!("cargo:rerun-if-changed=libsrc/include/SimConnect.hpp");
+    println!("cargo:rerun-if-changed=libsrc/lib/SimConnect.lib");
+
     let bindings = bindgen::Builder::default()
         .header("libsrc/include/SimConnect.hpp")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
