@@ -3,9 +3,9 @@
 Add this to your `Cargo.toml`
 ```toml
 [dependencies]
-simconnect = "0.1.3"
+simconnect = "0.2.0"
 ```
-**Note**: This crate is in its early stages and API breaking changes can be pushed at any moment. In this case, it's recommended to use the exact version "0.X.X".
+
 ## Building
 *The SimConnect binaries are included within this repository, but they may not be up to date.*
 
