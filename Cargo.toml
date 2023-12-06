@@ -10,3 +10,7 @@ edition = "2018"
 
 [build-dependencies]
 bindgen = "0.65"
+
+[[example]]
+name = "connection"
+crate-type = ["bin"]

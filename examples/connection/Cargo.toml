@@ -1,0 +1,11 @@
+[package]
+name = "example_01"
+version = "0.0.1"
+edition = "2018"
+
+[[bin]]
+path = "main.rs"
+name = "connection"
+
+[dependencies]
+simconnect = "0.2.0"
