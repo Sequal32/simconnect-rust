@@ -144,6 +144,7 @@ impl SimConnector {
         units_name: &str,
         datum_type: SIMCONNECT_DATATYPE,
         datum_id: DWORD,
+        epsilon: f32,
     ) -> bool {
         unsafe {
             SimConnect_AddToDataDefinition(
@@ -152,7 +153,7 @@ impl SimConnector {
                 as_c_string!(datum_name),
                 as_c_string!(units_name),
                 datum_type,
-                0.0,
+                epsilon,
                 datum_id,
             ) == 0
         }
