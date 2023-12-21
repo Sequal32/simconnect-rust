@@ -2,7 +2,7 @@
 name = "simconnect"
 license = "MIT"
 description = "Rust bindings for SimConnect"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Connor T"]
 edition = "2018"
 
