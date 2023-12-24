@@ -155,7 +155,7 @@ impl SimConnector {
                 as_c_string!(datum_name),
                 as_c_string!(units_name),
                 datum_type,
-                0.0,
+                epsilon,
                 datum_id,
             ) == 0
         }
