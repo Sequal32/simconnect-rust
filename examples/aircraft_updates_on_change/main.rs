@@ -31,9 +31,13 @@ fn main() {
 
     // Here we define all our variable that get returned as floats
     // (including integers, the memory allignment will handle the)
+    // The epsilon determines per X change do we want to receive an update from the game
+    // This greatly reduces the amount of data send to your client
+    // In this example the lat, lon values get an update every degree while the altitude only gets an
+    // update every 100 feet
     conn.add_data_definition(0, "PLANE LATITUDE", "Degrees", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, 1, 1.0); // Assign a sim variable to a client defined id
     conn.add_data_definition(0, "PLANE LONGITUDE", "Degrees", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, 2, 1.0);
-    conn.add_data_definition(0, "PLANE ALTITUDE", "Feet", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, 3, 1.0); //define_id, units, data_type, datum_id, epsilon (update threshold)
+    conn.add_data_definition(0, "PLANE ALTITUDE", "Feet", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, 3, 100.0); //define_id, units, data_type, datum_id, epsilon (update threshold)
 
     // Here we define all our variabes that get returned as Strings
     // Notice how the define_id differs from the float values
