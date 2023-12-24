@@ -50,6 +50,7 @@ fn main() {
     // The amount of variables returned is defined in the data.dwDefineCount of the response
     conn.request_data_on_sim_object(0, 0, 0, simconnect::SIMCONNECT_PERIOD_SIMCONNECT_PERIOD_SIM_FRAME, simconnect::SIMCONNECT_CLIENT_DATA_REQUEST_FLAG_CHANGED | simconnect::SIMCONNECT_CLIENT_DATA_REQUEST_FLAG_TAGGED, 0, 0, 0); //request_id, define_id, object_id (user), period, falgs, origin, interval, limit - tells simconnect to send data for the defined id and on the user aircraft
     // Request the data from our define_id 1 (strings)
+    // The request_id has to differ from the float request. Or else it will overwrite the previous request
     conn.request_data_on_sim_object(1, 1, 0, simconnect::SIMCONNECT_PERIOD_SIMCONNECT_PERIOD_SIM_FRAME, simconnect::SIMCONNECT_CLIENT_DATA_REQUEST_FLAG_CHANGED | simconnect::SIMCONNECT_CLIENT_DATA_REQUEST_FLAG_TAGGED, 0, 0, 0); //request_id, define_id, object_id (user), period, falgs, origin, interval, limit - tells simconnect to send data for the defined id and on the user aircraft
 
     loop {
@@ -57,6 +58,7 @@ fn main() {
             Ok(simconnect::DispatchResult::SimobjectData(data)) => {
                 unsafe {
                     match data.dwDefineID {
+                        //Here we match the define_id we've passed using the request_data_on_sim_object
                         0 => {
                             let sim_data =  std::ptr::addr_of!(data.dwData);
                             let sim_data_ptr = sim_data as *const DataFloatStruct;
