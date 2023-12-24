@@ -6,6 +6,8 @@ use std::thread::sleep;
 // To allign the memory we have to set a fixed max size to the returned variables from the game
 const MAX_RETURNED_ITEMS: usize = 255;
 
+// Rust will add padding to the inner parts of a struct if it isn't marked as packed
+// The way simconnect returns values is unalligned data in C style
 #[repr(C, packed)]
 struct KeyValuePairFloat {
     id: DWORD,
