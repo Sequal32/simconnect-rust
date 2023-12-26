@@ -29,7 +29,7 @@ struct DataStringStruct {
 
 fn main() {
     let mut conn = simconnect::SimConnector::new();
-    conn.connect("Program that returns data on changes"); // Intialize connection with SimConnect
+    conn.connect("Program that returns data on changes"); // Initialize connection with SimConnect
 
     // Here we define all our variable that get returned as floats
     // (including integers, which the memory alignment will handle)
