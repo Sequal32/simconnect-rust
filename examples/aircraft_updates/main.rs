@@ -21,8 +21,7 @@ fn main() {
                 unsafe {
                     match data.dwDefineID {
                         0 => {
-                            let sim_data = std::ptr::addr_of!(data.dwData);
-                            let sim_data_ptr = sim_data as *const DataStruct;
+                            let sim_data_ptr =  std::ptr::addr_of!(data.dwData) as *const DataStruct;
                             let sim_data_value = std::ptr::read_unaligned(sim_data_ptr);
                             println!("{:?} {:?} {:?}", sim_data_value.lat, sim_data_value.lon, sim_data_value.alt);
                         },

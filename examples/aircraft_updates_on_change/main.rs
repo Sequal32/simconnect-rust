@@ -7,7 +7,7 @@ use std::thread::sleep;
 const MAX_RETURNED_ITEMS: usize = 255;
 
 // Rust will add padding to the inner parts of a struct if it isn't marked as packed
-// The way simconnect returns values is unalligned data in C style
+// The way Simconnect returns values is unaligned data in C style
 #[repr(C, packed)]
 struct KeyValuePairFloat {
     id: DWORD,
@@ -32,7 +32,7 @@ fn main() {
     conn.connect("Program that returns data on changes"); // Intialize connection with SimConnect
 
     // Here we define all our variable that get returned as floats
-    // (including integers, the memory allignment will handle the)
+    // (including integers, which the memory alignment will handle)
     // The epsilon determines per X change do we want to receive an update from the game
     // This greatly reduces the amount of data send to your client
     // In this example the lat, lon values get an update every degree while the altitude only gets an
@@ -60,18 +60,17 @@ fn main() {
             Ok(simconnect::DispatchResult::SimobjectData(data)) => {
                 unsafe {
                     match data.dwDefineID {
-                        //Here we match the define_id we've passed using the request_data_on_sim_object
+                        // Here we match the define_id we've passed using the request_data_on_sim_object
                         0 => {
-                            let sim_data =  std::ptr::addr_of!(data.dwData);
-                            let sim_data_ptr = sim_data as *const DataFloatStruct;
+                            let sim_data_ptr =  std::ptr::addr_of!(data.dwData) as *const DataFloatStruct;
                             let sim_data_value = std::ptr::read_unaligned(sim_data_ptr);
                             // The amount of floats received from the sim
                             let count = data.dwDefineCount as usize;
 
-                            // itterate through the array of data structs
-                            // To allign the memory we have allocated an array of 255 elements to the datastruct
+                            // iterate through the array of data structs
+                            // To align the memory we have allocated an array of 255 elements to the datastruct
                             // The game might return 255 or 2 values
-                            // To only itterate over valid elements in the array
+                            // To only iterate over valid elements in the array
                             // We are able to leverage the dwDefineCount to loop over valid elements
                             for i in 0..count {
                                 let value = sim_data_value.data[i].value;
@@ -81,8 +80,7 @@ fn main() {
                             }
                         },
                         1 => {
-                            let sim_data =  std::ptr::addr_of!(data.dwData);
-                            let sim_data_ptr = sim_data as *const DataStringStruct;
+                            let sim_data_ptr =  std::ptr::addr_of!(data.dwData) as *const DataStringStruct;
                             // The amount of strings received from the sim
                             let count = data.dwDefineCount as usize;
                             let sim_data_value = std::ptr::read_unaligned(sim_data_ptr);
