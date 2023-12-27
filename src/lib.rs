@@ -27,9 +27,9 @@ struct DataStruct {
 
 let mut conn = simconnect::SimConnector::new();
 conn.connect("Simple Program"); // Intialize connection with SimConnect
-conn.add_data_definition(0, "PLANE LATITUDE", "Degrees", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX); // Assign a sim variable to a client defined id
-conn.add_data_definition(0, "PLANE LONGITUDE", "Degrees", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX);
-conn.add_data_definition(0, "PLANE ALTITUDE", "Feet", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX); //define_id, units, data_type, datum_id
+conn.add_data_definition(0, "PLANE LATITUDE", "Degrees", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX, 0.0); // Assign a sim variable to a client defined id
+conn.add_data_definition(0, "PLANE LONGITUDE", "Degrees", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX, 0.0);
+conn.add_data_definition(0, "PLANE ALTITUDE", "Feet", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX, 0.0); //define_id, units, data_type, datum_id, epsilon (per X change in sim variable, send data)
 conn.request_data_on_sim_object(0, 0, 0, simconnect::SIMCONNECT_PERIOD_SIMCONNECT_PERIOD_SIM_FRAME, 0, 0, 0, 0); //request_id, define_id, object_id (user), period, falgs, origin, interval, limit - tells simconnect to send data for the defined id and on the user aircraft
 
 loop {
@@ -38,8 +38,10 @@ loop {
       unsafe {
         match data.dwDefineID {
           0 => {
-            let sim_data: DataStruct = transmute_copy(&data.dwData);
-            println!("{:?} {:?} {:?}", sim_data.lat, sim_data.lon, sim_data.alt);
+            let sim_data =  std::ptr::addr_of!(data.dwData);
+            let sim_data_ptr = sim_data as *const DataStruct;
+            let sim_data_value = std::ptr::read_unaligned(sim_data_ptr);
+            println!("{:?} {:?} {:?}", sim_data_value.lat, sim_data_value.lon, sim_data_value.alt);
           },
           _ => ()
         }
@@ -57,16 +59,11 @@ loop {
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
+use std::ffi::CString;
 use std::mem::transmute_copy;
 use std::ptr;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-
-macro_rules! as_c_string {
-    ($target:expr) => {
-        std::ffi::CString::new($target).unwrap().as_ptr()
-    };
-}
 
 /// Enumerations for all the possible data types received from SimConnect
 #[derive(Debug)]
@@ -79,8 +76,8 @@ pub enum DispatchResult<'a> {
     EventObjectAddRemove(&'a SIMCONNECT_RECV_EVENT_OBJECT_ADDREMOVE),
     EventFilename(&'a SIMCONNECT_RECV_EVENT_FILENAME),
     EventFrame(&'a SIMCONNECT_RECV_EVENT_FRAME),
-    SimobjectData(&'a SIMCONNECT_RECV_SIMOBJECT_DATA),
-    SimobjectDataBytype(&'a SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE),
+    SimObjectData(&'a SIMCONNECT_RECV_SIMOBJECT_DATA),
+    SimObjectDataByType(&'a SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE),
     WeatherObservation(&'a SIMCONNECT_RECV_WEATHER_OBSERVATION),
     CloudState(&'a SIMCONNECT_RECV_CLOUD_STATE),
     AssignedObjectId(&'a SIMCONNECT_RECV_ASSIGNED_OBJECT_ID),
@@ -124,9 +121,11 @@ impl SimConnector {
             let temp_1 = ptr::null_mut();
             let temp_2 = ptr::null_mut();
 
+            let program_name = CString::new(program_name).unwrap();
+
             SimConnect_Open(
                 &mut self.sim_connect_handle,
-                as_c_string!(program_name),
+                program_name.as_ptr(),
                 temp_1,
                 0,
                 temp_2,
@@ -144,15 +143,19 @@ impl SimConnector {
         units_name: &str,
         datum_type: SIMCONNECT_DATATYPE,
         datum_id: DWORD,
+        epsilon: f32,
     ) -> bool {
+        let datum_name = CString::new(datum_name).unwrap();
+        let units_name = CString::new(units_name).unwrap();
+
         unsafe {
             SimConnect_AddToDataDefinition(
                 self.sim_connect_handle,
                 define_id,
-                as_c_string!(datum_name),
-                as_c_string!(units_name),
+                datum_name.as_ptr(),
+                units_name.as_ptr(),
                 datum_type,
-                0.0,
+                epsilon,
                 datum_id,
             ) == 0
         }
@@ -226,11 +229,13 @@ impl SimConnector {
         group_id: SIMCONNECT_INPUT_GROUP_ID,
         input_definition: &str,
     ) -> bool {
+        let input_definition = CString::new(input_definition).unwrap();
+
         unsafe {
             SimConnect_RemoveInputEvent(
                 self.sim_connect_handle,
                 group_id,
-                as_c_string!(input_definition),
+                input_definition.as_ptr(),
             ) == 0
         }
     }
@@ -246,13 +251,17 @@ impl SimConnector {
         key_choice_2: &str,
         key_choice_3: &str,
     ) -> bool {
+        let key_choice_1 = CString::new(key_choice_1).unwrap();
+        let key_choice_2 = CString::new(key_choice_2).unwrap();
+        let key_choice_3 = CString::new(key_choice_3).unwrap();
+
         unsafe {
             SimConnect_RequestReservedKey(
                 self.sim_connect_handle,
                 event_id,
-                as_c_string!(key_choice_1),
-                as_c_string!(key_choice_2),
-                as_c_string!(key_choice_3),
+                key_choice_1.as_ptr(),
+                key_choice_2.as_ptr(),
+                key_choice_3.as_ptr(),
             ) == 0
         }
     }
@@ -268,12 +277,16 @@ impl SimConnector {
         airport_id: &str,
         request_id: SIMCONNECT_DATA_REQUEST_ID,
     ) -> bool {
+        let container_title = CString::new(container_title).unwrap();
+        let tail_number = CString::new(tail_number).unwrap();
+        let airport_id = CString::new(airport_id).unwrap();
+
         unsafe {
             SimConnect_AICreateParkedATCAircraft(
                 self.sim_connect_handle,
-                as_c_string!(container_title),
-                as_c_string!(tail_number),
-                as_c_string!(airport_id),
+                container_title.as_ptr(),
+                tail_number.as_ptr(),
+                airport_id.as_ptr(),
                 request_id,
             ) == 0
         }
@@ -289,13 +302,17 @@ impl SimConnector {
         touch_and_go: bool,
         request_id: SIMCONNECT_DATA_REQUEST_ID,
     ) -> bool {
+        let container_title = CString::new(container_title).unwrap();
+        let tail_number = CString::new(tail_number).unwrap();
+        let flight_plan_path = CString::new(flight_plan_path).unwrap();
+
         unsafe {
             SimConnect_AICreateEnrouteATCAircraft(
                 self.sim_connect_handle,
-                as_c_string!(container_title),
-                as_c_string!(tail_number),
+                container_title.as_ptr(),
+                tail_number.as_ptr(),
                 flight_number,
-                as_c_string!(flight_plan_path),
+                flight_plan_path.as_ptr(),
                 flight_plan_position,
                 touch_and_go as i32,
                 request_id,
@@ -310,11 +327,14 @@ impl SimConnector {
         init_pos: SIMCONNECT_DATA_INITPOSITION,
         request_id: SIMCONNECT_DATA_REQUEST_ID,
     ) -> bool {
+        let container_title = CString::new(container_title).unwrap();
+        let tail_number = CString::new(tail_number).unwrap();
+
         unsafe {
             SimConnect_AICreateNonATCAircraft(
                 self.sim_connect_handle,
-                as_c_string!(container_title),
-                as_c_string!(tail_number),
+                container_title.as_ptr(),
+                tail_number.as_ptr(),
                 init_pos,
                 request_id,
             ) == 0
@@ -327,10 +347,12 @@ impl SimConnector {
         init_pos: SIMCONNECT_DATA_INITPOSITION,
         request_id: SIMCONNECT_DATA_REQUEST_ID,
     ) -> bool {
+        let container_title = CString::new(container_title).unwrap();
+
         unsafe {
             SimConnect_AICreateSimulatedObject(
                 self.sim_connect_handle,
-                as_c_string!(container_title),
+                container_title.as_ptr(),
                 init_pos,
                 request_id,
             ) == 0
@@ -359,11 +381,13 @@ impl SimConnector {
         flight_plan_path: &str,
         request_id: SIMCONNECT_DATA_REQUEST_ID,
     ) -> bool {
+        let flight_plan_path = CString::new(flight_plan_path).unwrap();
+
         unsafe {
             SimConnect_AISetAircraftFlightPlan(
                 self.sim_connect_handle,
                 object_id,
-                as_c_string!(flight_plan_path),
+                flight_plan_path.as_ptr(),
                 request_id,
             ) == 0
         }
@@ -428,13 +452,10 @@ impl SimConnector {
         event_id: SIMCONNECT_CLIENT_EVENT_ID,
         data: DWORD,
     ) -> bool {
+        let menu_item = CString::new(menu_item).unwrap();
+
         unsafe {
-            SimConnect_MenuAddItem(
-                self.sim_connect_handle,
-                as_c_string!(menu_item),
-                event_id,
-                data,
-            ) == 0
+            SimConnect_MenuAddItem(self.sim_connect_handle, menu_item.as_ptr(), event_id, data) == 0
         }
     }
 
@@ -457,9 +478,10 @@ impl SimConnector {
         request_id: SIMCONNECT_DATA_REQUEST_ID,
         state: &str,
     ) -> bool {
+        let state = CString::new(state).unwrap();
+
         unsafe {
-            SimConnect_RequestSystemState(self.sim_connect_handle, request_id, as_c_string!(state))
-                == 0
+            SimConnect_RequestSystemState(self.sim_connect_handle, request_id, state.as_ptr()) == 0
         }
     }
 
@@ -468,10 +490,12 @@ impl SimConnector {
         client_data_name: &str,
         data_id: SIMCONNECT_CLIENT_DATA_ID,
     ) -> bool {
+        let client_data_name = CString::new(client_data_name).unwrap();
+
         unsafe {
             SimConnect_MapClientDataNameToID(
                 self.sim_connect_handle,
-                as_c_string!(client_data_name),
+                client_data_name.as_ptr(),
                 data_id,
             ) == 0
         }
@@ -550,7 +574,9 @@ impl SimConnector {
     }
 
     pub fn flight_load(&self, file_name: &str) -> bool {
-        unsafe { SimConnect_FlightLoad(self.sim_connect_handle, as_c_string!(file_name)) == 0 }
+        let file_name = CString::new(file_name).unwrap();
+
+        unsafe { SimConnect_FlightLoad(self.sim_connect_handle, file_name.as_ptr()) == 0 }
     }
 
     pub unsafe fn text(
@@ -650,11 +676,13 @@ impl SimConnector {
         event_id: SIMCONNECT_CLIENT_EVENT_ID,
         event_name: &str,
     ) -> bool {
+        let event_name = CString::new(event_name).unwrap();
+
         unsafe {
             SimConnect_SubscribeToSystemEvent(
                 self.sim_connect_handle,
                 event_id,
-                as_c_string!(event_name),
+                event_name.as_ptr(),
             ) == 0
         }
     }
@@ -664,11 +692,13 @@ impl SimConnector {
         event_id: SIMCONNECT_CLIENT_EVENT_ID,
         event_name: &str,
     ) -> bool {
+        let event_name = CString::new(event_name).unwrap();
+
         unsafe {
             SimConnect_MapClientEventToSimEvent(
                 self.sim_connect_handle,
                 event_id,
-                as_c_string!(event_name),
+                event_name.as_ptr(),
             ) == 0
         }
     }
@@ -730,11 +760,13 @@ impl SimConnector {
         up_return_value: DWORD,
         maskable: bool,
     ) -> bool {
+        let input_definition = CString::new(input_definition).unwrap();
+
         unsafe {
             SimConnect_MapInputEventToClientEvent(
                 self.sim_connect_handle,
                 group_id,
-                as_c_string!(input_definition),
+                input_definition.as_ptr(),
                 down_event,
                 down_return_value,
                 up_event,
@@ -801,12 +833,12 @@ impl SimConnector {
                     )))
                 }
                 SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SIMOBJECT_DATA => {
-                    Ok(DispatchResult::SimobjectData(transmute_copy(
+                    Ok(DispatchResult::SimObjectData(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_SIMOBJECT_DATA),
                     )))
                 }
                 SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SIMOBJECT_DATA_BYTYPE => {
-                    Ok(DispatchResult::SimobjectDataBytype(transmute_copy(
+                    Ok(DispatchResult::SimObjectDataByType(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE),
                     )))
                 }
