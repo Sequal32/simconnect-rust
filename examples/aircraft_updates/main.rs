@@ -48,7 +48,7 @@ fn main() {
 
     loop {
         match conn.get_next_message() {
-            Ok(DispatchResult::SimobjectData(data)) => unsafe {
+            Ok(DispatchResult::SimObjectData(data)) => unsafe {
                 if data.dwDefineID == 0 {
                     let sim_data_ptr = std::ptr::addr_of!(data.dwData) as *const DataStruct;
                     let sim_data_value = std::ptr::read_unaligned(sim_data_ptr);

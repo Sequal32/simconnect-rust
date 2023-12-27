@@ -104,7 +104,7 @@ fn main() {
 
     loop {
         match conn.get_next_message() {
-            Ok(DispatchResult::SimobjectData(data)) => unsafe {
+            Ok(DispatchResult::SimObjectData(data)) => unsafe {
                 match data.dwDefineID {
                     // Here we match the define_id we've passed using the request_data_on_sim_object
                     0 => {

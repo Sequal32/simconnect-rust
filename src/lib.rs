@@ -76,8 +76,8 @@ pub enum DispatchResult<'a> {
     EventObjectAddRemove(&'a SIMCONNECT_RECV_EVENT_OBJECT_ADDREMOVE),
     EventFilename(&'a SIMCONNECT_RECV_EVENT_FILENAME),
     EventFrame(&'a SIMCONNECT_RECV_EVENT_FRAME),
-    SimobjectData(&'a SIMCONNECT_RECV_SIMOBJECT_DATA),
-    SimobjectDataBytype(&'a SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE),
+    SimObjectData(&'a SIMCONNECT_RECV_SIMOBJECT_DATA),
+    SimObjectDataByType(&'a SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE),
     WeatherObservation(&'a SIMCONNECT_RECV_WEATHER_OBSERVATION),
     CloudState(&'a SIMCONNECT_RECV_CLOUD_STATE),
     AssignedObjectId(&'a SIMCONNECT_RECV_ASSIGNED_OBJECT_ID),
@@ -833,12 +833,12 @@ impl SimConnector {
                     )))
                 }
                 SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SIMOBJECT_DATA => {
-                    Ok(DispatchResult::SimobjectData(transmute_copy(
+                    Ok(DispatchResult::SimObjectData(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_SIMOBJECT_DATA),
                     )))
                 }
                 SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SIMOBJECT_DATA_BYTYPE => {
-                    Ok(DispatchResult::SimobjectDataBytype(transmute_copy(
+                    Ok(DispatchResult::SimObjectDataByType(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE),
                     )))
                 }
