@@ -1,3 +1,4 @@
+![crates.io](https://img.shields.io/crates/v/simconnect)
 # SimConnect Bindings for Rust
 ## Using
 Add this to your `Cargo.toml`
