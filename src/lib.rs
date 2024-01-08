@@ -99,6 +99,7 @@ pub enum DispatchResult<'a> {
 
 /// Handles communication between the client program and SimConnect
 /// For more information about the functions provided, refer to the SimConnect SDK Documentation. The functions name closely match up with those defined there.
+#[derive(Debug)]
 pub struct SimConnector {
     sim_connect_handle: HANDLE,
 }
