@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use simconnect::SIMCONNECT_CLIENT_EVENT_ID;
+use std::collections::HashMap;
 
 // define a struct that holds the event and the input id
 // the events can be found in the SimConnect SDK documentation for your sim
@@ -7,7 +7,7 @@ struct Input {
     event: String, // The event to be triggered i.e.
     input_id: u32, // The id we use to trigger the event
 }
-fn main(){
+fn main() {
     let input_parking_brakes = Input {
         event: "PARKING_BRAKES".to_string(),
         input_id: 1,
@@ -52,7 +52,7 @@ fn main(){
             Some(event) => {
                 // this is why we've defined a hashmap instead of a vector
                 println!("Triggering event: {}", event.event);
-               /* send message to the sim
+                /* send message to the sim
                 object_id is 0 because we want to trigger the event on the user aircraft
                 group_id is 0 because we don't want to group the event with other events
                 priority is 0 because we don't want to prioritize the event
