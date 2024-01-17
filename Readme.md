@@ -1,9 +1,10 @@
+![crates.io](https://img.shields.io/crates/v/simconnect)
 # SimConnect Bindings for Rust
 ## Using
 Add this to your `Cargo.toml`
 ```toml
 [dependencies]
-simconnect = "0.2.1"
+simconnect = "0.3.1"
 ```
 
 ## Building
