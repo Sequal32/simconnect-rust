@@ -15,13 +15,13 @@ struct KeyValuePairFloat {
 struct DataFloatStruct {
     data: [KeyValuePairFloat; MAX_RETURNED_ITEMS],
 }
+
 #[repr(C, packed)]
 struct KeyValuePairString {
     id: DWORD,
     // Strings get returned as max 255 bytes
     value: [u8; 255],
 }
-
 struct DataStringStruct {
     data: [KeyValuePairString; MAX_RETURNED_ITEMS],
 }
@@ -128,17 +128,13 @@ fn main() {
                     }
                     1 => {
                         let sim_data_ptr =
-                            std::ptr::addr_of!(data.dwData) as *const DataStringStruct;
+                            std::ptr::addr_of!(data.dwData) as *const KeyValuePairString;
                         // The amount of strings received from the sim
-                        let count = data.dwDefineCount as usize;
-                        let sim_data_value = std::ptr::read_unaligned(sim_data_ptr);
+                        let count = data.dwDefineCount as isize;
                         for i in 0..count {
-                            //since we only defined 1 string variable the key returned should be 4
-                            let key = sim_data_value.data[0].id;
-                            //byte array to string
-                            let string =
-                                std::str::from_utf8(&sim_data_value.data[i].value).unwrap();
-                            println!("{}", key);
+                            let item_ptr = sim_data_ptr.offset(i);
+                            let sim_data_value = std::ptr::read_unaligned(item_ptr);
+                            let string = std::str::from_utf8(&sim_data_value.value).unwrap();
                             println!("{}", string);
                         }
                     }
