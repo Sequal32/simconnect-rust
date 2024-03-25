@@ -2,7 +2,7 @@
 name = "simconnect"
 license = "MIT"
 description = "Rust bindings for SimConnect"
-version = "0.3.0"
+version = "0.3.2"
 authors = ["Connor T"]
 edition = "2018"
 
@@ -17,4 +17,4 @@ path = "examples/aircraft_updates/main.rs"
 
 
 [build-dependencies]
-bindgen = "0.65"
+bindgen = "0.69.4"
