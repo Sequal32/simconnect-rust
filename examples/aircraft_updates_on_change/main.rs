@@ -22,10 +22,6 @@ struct KeyValuePairString {
     value: [u8; 255],
 }
 
-struct DataStringStruct {
-    data: [KeyValuePairString; MAX_RETURNED_ITEMS],
-}
-
 fn main() {
     let mut conn = simconnect::SimConnector::new();
     conn.connect("Program that returns data on changes"); // Initialize connection with SimConnect
