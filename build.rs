@@ -6,7 +6,7 @@ fn main() {
 
     let bindings = bindgen::Builder::default()
         .header("libsrc/include/SimConnect.hpp")
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .allowlist_var("SIMCONNECT_UNUSED")
         .allowlist_var("SIMCONNECT_OBJECT_ID_USER")
         .allowlist_var("SIMCONNECT_CAMERA_IGNORE_FIELD")
@@ -66,6 +66,7 @@ fn main() {
         .allowlist_var("UNKNOWN_GROUP")
         .allowlist_var("SIMCONNECT_CLOUD_STATE_ARRAY_WIDTH")
         .allowlist_var("SIMCONNECT_CLOUD_STATE_ARRAY_SIZE")
+        .allowlist_type("HANDLE")
         .allowlist_type("SIMCONNECT_RECV_ID")
         .allowlist_type("SIMCONNECT_DATATYPE")
         .allowlist_type("SIMCONNECT_EXCEPTION")
