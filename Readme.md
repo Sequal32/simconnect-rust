@@ -2,6 +2,11 @@
 
 # SimConnect Bindings for Rust
 
+
+## Requirements
+- [CLang](https://clang.llvm.org/get_started.html) (See the [Rust Bindgen Documentation](https://rust-lang.github.io/rust-bindgen/requirements.html))
+- MSVC x64 Rust build (`x86_64-pc-windows-msvc`, see [The rustup book](https://rust-lang.github.io/rustup/installation/windows.html))
+
 ## Using
 
 Add this to your `Cargo.toml`
@@ -15,9 +20,8 @@ simconnect = "0.4.0"
 
 _The SimConnect binaries are included within this repository, but they may not be up-to-date._
 
-1. Install [CLang](https://clang.llvm.org/get_started.html). More information available at the [Rust Bindgen Documentation](https://rust-lang.github.io/rust-bindgen/requirements.html).
-2. run `cargo build`
-3. Add `use simconnect` at the top of your file
+1. run `cargo build`
+2. Add `use simconnect` at the top of your file
 
 ## Example
 
@@ -34,10 +38,6 @@ cargo run --example aircraft_updates_on_change
 ```
 
 _You must have SimConnect.dll in the same directory as the compiled exe for it to run (e.g. in )_
-
-## Building
-
-_The SimConnect.dll is included in this repository, but might not be up-to-date_
 
 ### Remarks
 
