@@ -4,7 +4,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "Windows.h"
+#include <windows.h>
 
 #ifndef _SIMCONNECT_H_
 #define _SIMCONNECT_H_
