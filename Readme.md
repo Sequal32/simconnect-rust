@@ -2,8 +2,8 @@
 
 # SimConnect Bindings for Rust
 
-
 ## Requirements
+
 - [CLang](https://clang.llvm.org/get_started.html) (See the [Rust Bindgen Documentation](https://rust-lang.github.io/rust-bindgen/requirements.html))
 - MSVC x64 Rust build (`x86_64-pc-windows-msvc`, see [The rustup book](https://rust-lang.github.io/rustup/installation/windows.html))
 
@@ -13,7 +13,7 @@ Add this to your `Cargo.toml`
 
 ```toml
 [dependencies]
-simconnect = "0.4.0"
+simconnect = "0.3.2"
 ```
 
 ## Building
