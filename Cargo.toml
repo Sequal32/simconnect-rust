@@ -2,11 +2,10 @@
 name = "simconnect"
 license = "MIT"
 description = "Rust bindings for SimConnect"
-version = "0.3.2"
+version = "0.4.0"
 authors = ["Connor T"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [[example]]
 name = "aircraft_updates_on_change"
 path = "examples/aircraft_updates_on_change/main.rs"
@@ -20,4 +19,4 @@ name = "aircraft_inputs"
 path = "examples/aircraft_inputs/main.rs"
 
 [build-dependencies]
-bindgen = "0.69.4"
+bindgen = "0.72"
