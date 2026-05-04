@@ -992,8 +992,7 @@ impl SimConnector {
     /// Retrieves the next message from SimConnect. Nonblocking.
     pub fn get_next_message(&self) -> Result<DispatchResult<'_>, &str> {
         let mut data_buf: *mut SIMCONNECT_RECV = ptr::null_mut();
-
-        let mut size_buf: DWORD = 32;
+        let mut size_buf: DWORD = 0;
         let size_buf_pointer: *mut DWORD = &mut size_buf;
 
         unsafe {
@@ -1002,11 +1001,18 @@ impl SimConnector {
                 &mut data_buf,
                 size_buf_pointer,
             );
+
             if result != 0 {
                 return Err("Failed getting data!");
             }
 
-            return match (*data_buf).dwID as SIMCONNECT_RECV_ID {
+            // SimConnect_GetNextDispatch returns S_OK with a NULL pointer when the queue is empty.
+            // Dereferencing a null pointer would be UB, so we must check this explicitly.
+            if data_buf.is_null() {
+                return Ok(DispatchResult::Null);
+            }
+
+            match (*data_buf).dwID as SIMCONNECT_RECV_ID {
                 SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_NULL => Ok(DispatchResult::Null),
                 SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EXCEPTION => Ok(DispatchResult::Exception(
                     transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EXCEPTION)),
@@ -1177,7 +1183,7 @@ impl SimConnector {
                 }
 
                 _ => Err("Unhandled RECV_ID"),
-            };
+            }
         }
     }
 }
