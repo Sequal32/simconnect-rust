@@ -1,60 +1,4 @@
 #![allow(clippy::too_many_arguments, clippy::missing_safety_doc)]
-/*!
-The simconnect crate provides rust bindings to retrieve and send information through SimConnect.
-
-Documentation for SimConnect can be found by downloading the SDK for FS2020 or using P3D/FSX SDK documentations for reference (although some of their documentation does not apply for FS2020).
-
-# Setup
-Add this to your `Cargo.toml`
-```toml
-[dependencies]
-simconnect = "0.1"
-```
-
-# Simple Example
-*Note: You must have SimConnect.dll in your current working directory to be able to successfully use SimConnect*
-```rust
-use simconnect;
-use std::time::Duration;
-use std::thread::sleep;
-use std::mem::transmute_copy;
-
-struct DataStruct {
-  lat: f64,
-  lon: f64,
-  alt: f64,
-}
-
-let mut conn = simconnect::SimConnector::new();
-conn.connect("Simple Program"); // Intialize connection with SimConnect
-conn.add_data_definition(0, "PLANE LATITUDE", "Degrees", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX, 0.0); // Assign a sim variable to a client defined id
-conn.add_data_definition(0, "PLANE LONGITUDE", "Degrees", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX, 0.0);
-conn.add_data_definition(0, "PLANE ALTITUDE", "Feet", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX, 0.0); //define_id, units, data_type, datum_id, epsilon (per X change in sim variable, send data)
-conn.request_data_on_sim_object(0, 0, 0, simconnect::SIMCONNECT_PERIOD_SIMCONNECT_PERIOD_SIM_FRAME, 0, 0, 0, 0); //request_id, define_id, object_id (user), period, falgs, origin, interval, limit - tells simconnect to send data for the defined id and on the user aircraft
-
-loop {
-  match conn.get_next_message() {
-    Ok(simconnect::DispatchResult::SimobjectData(data)) => {
-      unsafe {
-        match data.dwDefineID {
-          0 => {
-            let sim_data =  std::ptr::addr_of!(data.dwData);
-            let sim_data_ptr = sim_data as *const DataStruct;
-            let sim_data_value = std::ptr::read_unaligned(sim_data_ptr);
-            println!("{:?} {:?} {:?}", sim_data_value.lat, sim_data_value.lon, sim_data_value.alt);
-          },
-          _ => ()
-        }
-      }
-    },
-    _ => ()
-  }
-
-  sleep(Duration::from_millis(16)); // Will use up lots of CPU if this is not included, as get_next_message() is non-blocking
-}
-```
-!*/
-
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
@@ -106,7 +50,6 @@ pub enum DispatchResult<'a> {
     SubscribeInputEvent(&'a SIMCONNECT_RECV_SUBSCRIBE_INPUT_EVENT),
     EnumerateInputEventParams(&'a SIMCONNECT_RECV_ENUMERATE_INPUT_EVENT_PARAMS),
     ControllersList(&'a SIMCONNECT_RECV_CONTROLLERS_LIST),
-    Pick(&'a SIMCONNECT_RECV_PICK), // experimental
 }
 
 /// Handles communication between the client program and SimConnect
@@ -1049,201 +992,192 @@ impl SimConnector {
     /// Retrieves the next message from SimConnect. Nonblocking.
     pub fn get_next_message(&self) -> Result<DispatchResult<'_>, &str> {
         let mut data_buf: *mut SIMCONNECT_RECV = ptr::null_mut();
-        let mut size_buf: DWORD = 0;
+
+        let mut size_buf: DWORD = 32;
+        let size_buf_pointer: *mut DWORD = &mut size_buf;
 
         unsafe {
             let result = SimConnect_GetNextDispatch(
                 self.sim_connect_handle,
                 &mut data_buf,
-                &mut size_buf,
+                size_buf_pointer,
             );
             if result != 0 {
                 return Err("Failed getting data!");
             }
 
-            if data_buf.is_null() {
-                return Ok(DispatchResult::Null);
-            }
-
-            match (*data_buf).dwID {
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_NULL => Ok(DispatchResult::Null),
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_EXCEPTION => Ok(DispatchResult::Exception(
+            return match (*data_buf).dwID as SIMCONNECT_RECV_ID {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_NULL => Ok(DispatchResult::Null),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EXCEPTION => Ok(DispatchResult::Exception(
                     transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EXCEPTION)),
                 )),
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_OPEN => Ok(DispatchResult::Open(
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_OPEN => Ok(DispatchResult::Open(
                     transmute_copy(&(data_buf as *const SIMCONNECT_RECV_OPEN)),
                 )),
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_QUIT => Ok(DispatchResult::Quit(
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_QUIT => Ok(DispatchResult::Quit(
                     transmute_copy(&(data_buf as *const SIMCONNECT_RECV_QUIT)),
                 )),
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_EVENT => Ok(DispatchResult::Event(
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT => Ok(DispatchResult::Event(
                     transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EVENT)),
                 )),
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_EVENT_OBJECT_ADDREMOVE => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_OBJECT_ADDREMOVE => {
                     Ok(DispatchResult::EventObjectAddRemove(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_EVENT_OBJECT_ADDREMOVE),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_EVENT_FILENAME => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_FILENAME => {
                     Ok(DispatchResult::EventFilename(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_EVENT_FILENAME),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_EVENT_FRAME => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_FRAME => {
                     Ok(DispatchResult::EventFrame(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_EVENT_FRAME),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_SIMOBJECT_DATA => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SIMOBJECT_DATA => {
                     Ok(DispatchResult::SimObjectData(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_SIMOBJECT_DATA),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_SIMOBJECT_DATA_BYTYPE => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SIMOBJECT_DATA_BYTYPE => {
                     Ok(DispatchResult::SimObjectDataByType(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_WEATHER_OBSERVATION => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_WEATHER_OBSERVATION => {
                     Ok(DispatchResult::WeatherObservation(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_WEATHER_OBSERVATION),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_CLOUD_STATE => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CLOUD_STATE => {
                     Ok(DispatchResult::CloudState(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_CLOUD_STATE),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_ASSIGNED_OBJECT_ID => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_ASSIGNED_OBJECT_ID => {
                     Ok(DispatchResult::AssignedObjectId(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_ASSIGNED_OBJECT_ID),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_RESERVED_KEY => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_RESERVED_KEY => {
                     Ok(DispatchResult::ReservedKey(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_RESERVED_KEY),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_CUSTOM_ACTION => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CUSTOM_ACTION => {
                     Ok(DispatchResult::CustomAction(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_CUSTOM_ACTION),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_SYSTEM_STATE => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SYSTEM_STATE => {
                     Ok(DispatchResult::SystemState(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_SYSTEM_STATE),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_CLIENT_DATA => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CLIENT_DATA => {
                     Ok(DispatchResult::ClientData(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_CLIENT_DATA),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_EVENT_WEATHER_MODE => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_WEATHER_MODE => {
                     Ok(DispatchResult::EventWeatherMode(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_EVENT_WEATHER_MODE),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_AIRPORT_LIST => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_AIRPORT_LIST => {
                     Ok(DispatchResult::AirportList(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_AIRPORT_LIST),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_VOR_LIST => Ok(DispatchResult::VorList(
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_VOR_LIST => Ok(DispatchResult::VorList(
                     transmute_copy(&(data_buf as *const SIMCONNECT_RECV_VOR_LIST)),
                 )),
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_NDB_LIST => Ok(DispatchResult::NdbList(
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_NDB_LIST => Ok(DispatchResult::NdbList(
                     transmute_copy(&(data_buf as *const SIMCONNECT_RECV_NDB_LIST)),
                 )),
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_WAYPOINT_LIST => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_WAYPOINT_LIST => {
                     Ok(DispatchResult::WaypointList(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_WAYPOINT_LIST),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_SERVER_STARTED => Ok(
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_SERVER_STARTED => Ok(
                     DispatchResult::EventMultiplayerServerStarted(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_EVENT_MULTIPLAYER_SERVER_STARTED),
                     )),
                 ),
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_CLIENT_STARTED => Ok(
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_CLIENT_STARTED => Ok(
                     DispatchResult::EventMultiplayerClientStarted(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_EVENT_MULTIPLAYER_CLIENT_STARTED),
                     )),
                 ),
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_SESSION_ENDED => Ok(
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_MULTIPLAYER_SESSION_ENDED => Ok(
                     DispatchResult::EventMultiplayerSessionEnded(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_EVENT_MULTIPLAYER_SESSION_ENDED),
                     )),
                 ),
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_EVENT_RACE_END => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_RACE_END => {
                     Ok(DispatchResult::EventRaceEnd(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_EVENT_RACE_END),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_EVENT_RACE_LAP => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_RACE_LAP => {
                     Ok(DispatchResult::EventRaceLap(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_EVENT_RACE_LAP),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_EVENT_EX1 => Ok(DispatchResult::EventEx1(
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_EX1 => Ok(DispatchResult::EventEx1(
                     transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EVENT_EX1)),
                 )),
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_FACILITY_DATA => {
-                    Ok(DispatchResult::FacilityData(transmute_copy(
-                        &(data_buf as *const SIMCONNECT_RECV_FACILITY_DATA),
-                    )))
-                }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_FACILITY_DATA_END => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_FACILITY_DATA => Ok(DispatchResult::FacilityData(
+                    transmute_copy(&(data_buf as *const SIMCONNECT_RECV_FACILITY_DATA)),
+                )),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_FACILITY_DATA_END => {
                     Ok(DispatchResult::FacilityDataEnd(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_FACILITY_DATA_END),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_FACILITY_MINIMAL_LIST => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_FACILITY_MINIMAL_LIST => {
                     Ok(DispatchResult::FacilityMinimalList(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_FACILITY_MINIMAL_LIST),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_JETWAY_DATA => {
-                    Ok(DispatchResult::JetwayData(transmute_copy(
-                        &(data_buf as *const SIMCONNECT_RECV_JETWAY_DATA),
-                    )))
-                }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_ACTION_CALLBACK => {
-                    Ok(DispatchResult::ActionCallback(transmute_copy(
-                        &(data_buf as *const SIMCONNECT_RECV_ACTION_CALLBACK),
-                    )))
-                }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_ENUMERATE_INPUT_EVENTS => {
-                    Ok(DispatchResult::EnumerateInputEvents(transmute_copy(
-                        &(data_buf as *const SIMCONNECT_RECV_ENUMERATE_INPUT_EVENTS),
-                    )))
-                }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_GET_INPUT_EVENT => {
-                    Ok(DispatchResult::GetInputEvent(transmute_copy(
-                        &(data_buf as *const SIMCONNECT_RECV_GET_INPUT_EVENT),
-                    )))
-                }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_SUBSCRIBE_INPUT_EVENT => {
-                    Ok(DispatchResult::SubscribeInputEvent(transmute_copy(
-                        &(data_buf as *const SIMCONNECT_RECV_SUBSCRIBE_INPUT_EVENT),
-                    )))
-                }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_ENUMERATE_INPUT_EVENT_PARAMS => {
-                    Ok(DispatchResult::EnumerateInputEventParams(transmute_copy(
-                        &(data_buf as *const SIMCONNECT_RECV_ENUMERATE_INPUT_EVENT_PARAMS),
-                    )))
-                }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_CONTROLLERS_LIST => {
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_JETWAY_DATA => Ok(DispatchResult::JetwayData(
+                    transmute_copy(&(data_buf as *const SIMCONNECT_RECV_JETWAY_DATA)),
+                )),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CONTROLLERS_LIST => {
                     Ok(DispatchResult::ControllersList(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_CONTROLLERS_LIST),
                     )))
                 }
-                SIMCONNECT_RECV_ID::SIMCONNECT_RECV_ID_PICK => Ok(DispatchResult::Pick(
-                    transmute_copy(&(data_buf as *const SIMCONNECT_RECV_PICK)),
-                )),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_ACTION_CALLBACK => {
+                    Ok(DispatchResult::ActionCallback(transmute_copy(
+                        &(data_buf as *const SIMCONNECT_RECV_ACTION_CALLBACK),
+                    )))
+                }
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_ENUMERATE_INPUT_EVENTS => {
+                    Ok(DispatchResult::EnumerateInputEvents(transmute_copy(
+                        &(data_buf as *const SIMCONNECT_RECV_ENUMERATE_INPUT_EVENTS),
+                    )))
+                }
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_GET_INPUT_EVENT => {
+                    Ok(DispatchResult::GetInputEvent(transmute_copy(
+                        &(data_buf as *const SIMCONNECT_RECV_GET_INPUT_EVENT),
+                    )))
+                }
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SUBSCRIBE_INPUT_EVENT => {
+                    Ok(DispatchResult::SubscribeInputEvent(transmute_copy(
+                        &(data_buf as *const SIMCONNECT_RECV_SUBSCRIBE_INPUT_EVENT),
+                    )))
+                }
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_ENUMERATE_INPUT_EVENT_PARAMS => {
+                    Ok(DispatchResult::EnumerateInputEventParams(transmute_copy(
+                        &(data_buf as *const SIMCONNECT_RECV_ENUMERATE_INPUT_EVENT_PARAMS),
+                    )))
+                }
 
                 _ => Err("Unhandled RECV_ID"),
-            }
+            };
         }
     }
 }
@@ -1251,7 +1185,7 @@ impl SimConnector {
 impl Drop for SimConnector {
     fn drop(&mut self) {
         if !self.sim_connect_handle.is_null() {
-            let _ = self.close();
+            self.close();
         }
     }
 }
