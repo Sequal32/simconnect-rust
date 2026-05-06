@@ -1,60 +1,4 @@
 #![allow(clippy::too_many_arguments, clippy::missing_safety_doc)]
-/*!
-The simconnect crate provides rust bindings to retrieve and send information through SimConnect.
-
-Documentation for SimConnect can be found by downloading the SDK for FS2020 or using P3D/FSX SDK documentations for reference (although some of their documentation does not apply for FS2020).
-
-# Setup
-Add this to your `Cargo.toml`
-```toml
-[dependencies]
-simconnect = "0.1"
-```
-
-# Simple Example
-*Note: You must have SimConnect.dll in your current working directory to be able to successfully use SimConnect*
-```rust
-use simconnect;
-use std::time::Duration;
-use std::thread::sleep;
-use std::mem::transmute_copy;
-
-struct DataStruct {
-  lat: f64,
-  lon: f64,
-  alt: f64,
-}
-
-let mut conn = simconnect::SimConnector::new();
-conn.connect("Simple Program"); // Intialize connection with SimConnect
-conn.add_data_definition(0, "PLANE LATITUDE", "Degrees", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX, 0.0); // Assign a sim variable to a client defined id
-conn.add_data_definition(0, "PLANE LONGITUDE", "Degrees", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX, 0.0);
-conn.add_data_definition(0, "PLANE ALTITUDE", "Feet", simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64, u32::MAX, 0.0); //define_id, units, data_type, datum_id, epsilon (per X change in sim variable, send data)
-conn.request_data_on_sim_object(0, 0, 0, simconnect::SIMCONNECT_PERIOD_SIMCONNECT_PERIOD_SIM_FRAME, 0, 0, 0, 0); //request_id, define_id, object_id (user), period, falgs, origin, interval, limit - tells simconnect to send data for the defined id and on the user aircraft
-
-loop {
-  match conn.get_next_message() {
-    Ok(simconnect::DispatchResult::SimobjectData(data)) => {
-      unsafe {
-        match data.dwDefineID {
-          0 => {
-            let sim_data =  std::ptr::addr_of!(data.dwData);
-            let sim_data_ptr = sim_data as *const DataStruct;
-            let sim_data_value = std::ptr::read_unaligned(sim_data_ptr);
-            println!("{:?} {:?} {:?}", sim_data_value.lat, sim_data_value.lon, sim_data_value.alt);
-          },
-          _ => ()
-        }
-      }
-    },
-    _ => ()
-  }
-
-  sleep(Duration::from_millis(16)); // Will use up lots of CPU if this is not included, as get_next_message() is non-blocking
-}
-```
-!*/
-
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
@@ -95,10 +39,20 @@ pub enum DispatchResult<'a> {
     EventMultiplayerSessionEnded(&'a SIMCONNECT_RECV_EVENT_MULTIPLAYER_SESSION_ENDED),
     EventRaceEnd(&'a SIMCONNECT_RECV_EVENT_RACE_END),
     EventRaceLap(&'a SIMCONNECT_RECV_EVENT_RACE_LAP),
+    EventEx1(&'a SIMCONNECT_RECV_EVENT_EX1),
+    FacilityData(&'a SIMCONNECT_RECV_FACILITY_DATA),
+    FacilityDataEnd(&'a SIMCONNECT_RECV_FACILITY_DATA_END),
+    FacilityMinimalList(&'a SIMCONNECT_RECV_FACILITY_MINIMAL_LIST),
+    JetwayData(&'a SIMCONNECT_RECV_JETWAY_DATA),
+    ActionCallback(&'a SIMCONNECT_RECV_ACTION_CALLBACK),
+    EnumerateInputEvents(&'a SIMCONNECT_RECV_ENUMERATE_INPUT_EVENTS),
+    GetInputEvent(&'a SIMCONNECT_RECV_GET_INPUT_EVENT),
+    SubscribeInputEvent(&'a SIMCONNECT_RECV_SUBSCRIBE_INPUT_EVENT),
+    EnumerateInputEventParams(&'a SIMCONNECT_RECV_ENUMERATE_INPUT_EVENT_PARAMS),
+    ControllersList(&'a SIMCONNECT_RECV_CONTROLLERS_LIST),
 }
 
 /// Handles communication between the client program and SimConnect
-/// For more information about the functions provided, refer to the SimConnect SDK Documentation. The functions name closely match up with those defined there.
 #[derive(Debug)]
 pub struct SimConnector {
     sim_connect_handle: HANDLE,
@@ -245,7 +199,7 @@ impl SimConnector {
         unsafe { SimConnect_ClearInputGroup(self.sim_connect_handle, group_id) == 0 }
     }
 
-    pub fn request_reserved_Key(
+    pub fn request_reserved_key(
         &self,
         event_id: SIMCONNECT_CLIENT_EVENT_ID,
         key_choice_1: &str,
@@ -410,7 +364,6 @@ impl SimConnector {
         unsafe { SimConnect_GetLastSentPacketID(self.sim_connect_handle, error) == 0 }
     }
 
-    // not tested
     pub unsafe fn call_dispatch(
         &self,
         dispatch_callback: DispatchProc,
@@ -600,7 +553,7 @@ impl SimConnector {
         }
     }
 
-    pub unsafe fn subscribe_to_facilities(
+    pub fn subscribe_to_facilities(
         &self,
         list_type: SIMCONNECT_FACILITY_LIST_TYPE,
         request_id: SIMCONNECT_DATA_REQUEST_ID,
@@ -787,11 +740,259 @@ impl SimConnector {
         }
     }
 
-    /// Retrieves the next message from SimConnect. Nonblocking.
-    pub fn get_next_message(&self) -> Result<DispatchResult, &str> {
-        let mut data_buf: *mut SIMCONNECT_RECV = ptr::null_mut();
+    pub fn transmit_client_event_ex1(
+        &self,
+        object_id: SIMCONNECT_OBJECT_ID,
+        event_id: SIMCONNECT_CLIENT_EVENT_ID,
+        group_id: SIMCONNECT_NOTIFICATION_GROUP_ID,
+        flags: SIMCONNECT_EVENT_FLAG,
+        data0: DWORD,
+        data1: DWORD,
+        data2: DWORD,
+        data3: DWORD,
+        data4: DWORD,
+    ) -> bool {
+        unsafe {
+            SimConnect_TransmitClientEvent_EX1(
+                self.sim_connect_handle,
+                object_id,
+                event_id,
+                group_id,
+                flags,
+                data0,
+                data1,
+                data2,
+                data3,
+                data4,
+            ) == 0
+        }
+    }
 
-        let mut size_buf: DWORD = 32;
+    pub fn add_to_facility_definition(
+        &self,
+        define_id: SIMCONNECT_DATA_DEFINITION_ID,
+        field_name: &str,
+    ) -> bool {
+        let field_name = CString::new(field_name).unwrap();
+        unsafe {
+            SimConnect_AddToFacilityDefinition(self.sim_connect_handle, define_id, field_name.as_ptr())
+                == 0
+        }
+    }
+
+    pub fn request_facility_data(
+        &self,
+        define_id: SIMCONNECT_DATA_DEFINITION_ID,
+        request_id: SIMCONNECT_DATA_REQUEST_ID,
+        icao: &str,
+        region: Option<&str>,
+    ) -> bool {
+        let icao = CString::new(icao).unwrap();
+        let region = region.map(|s| CString::new(s).unwrap());
+
+        unsafe {
+            SimConnect_RequestFacilityData(
+                self.sim_connect_handle,
+                define_id,
+                request_id,
+                icao.as_ptr(),
+                region.as_ref().map_or(ptr::null(), |s| s.as_ptr()),
+            ) == 0
+        }
+    }
+
+    pub fn subscribe_to_facilities_ex1(
+        &self,
+        list_type: SIMCONNECT_FACILITY_LIST_TYPE,
+        new_in_range_request_id: SIMCONNECT_DATA_REQUEST_ID,
+        old_out_of_range_request_id: SIMCONNECT_DATA_REQUEST_ID,
+    ) -> bool {
+        unsafe {
+            SimConnect_SubscribeToFacilities_EX1(
+                self.sim_connect_handle,
+                list_type,
+                new_in_range_request_id,
+                old_out_of_range_request_id,
+            ) == 0
+        }
+    }
+
+    pub fn unsubscribe_to_facilities_ex1(
+        &self,
+        list_type: SIMCONNECT_FACILITY_LIST_TYPE,
+        unsubscribe_new_in_range: bool,
+        unsubscribe_old_out_of_range: bool,
+    ) -> bool {
+        unsafe {
+            SimConnect_UnsubscribeToFacilities_EX1(
+                self.sim_connect_handle,
+                list_type,
+                unsubscribe_new_in_range,
+                unsubscribe_old_out_of_range,
+            ) == 0
+        }
+    }
+
+    pub fn request_facilities_list_ex1(
+        &self,
+        list_type: SIMCONNECT_FACILITY_LIST_TYPE,
+        request_id: SIMCONNECT_DATA_REQUEST_ID,
+    ) -> bool {
+        unsafe {
+            SimConnect_RequestFacilitiesList_EX1(self.sim_connect_handle, list_type, request_id) == 0
+        }
+    }
+
+    pub fn request_facility_data_ex1(
+        &self,
+        define_id: SIMCONNECT_DATA_DEFINITION_ID,
+        request_id: SIMCONNECT_DATA_REQUEST_ID,
+        icao: &str,
+        region: Option<&str>,
+        type_: Option<i8>,
+    ) -> bool {
+        let icao = CString::new(icao).unwrap();
+        let region = region.map(|s| CString::new(s).unwrap());
+
+        unsafe {
+            SimConnect_RequestFacilityData_EX1(
+                self.sim_connect_handle,
+                define_id,
+                request_id,
+                icao.as_ptr(),
+                region.as_ref().map_or(ptr::null(), |s| s.as_ptr()),
+                type_.unwrap_or(0) as ::std::os::raw::c_char,
+            ) == 0
+        }
+    }
+
+    pub fn request_jetway_data(
+        &self,
+        airport_icao: &str,
+        array_count: DWORD,
+        indexes: *mut i32,
+    ) -> bool {
+        let airport_icao = CString::new(airport_icao).unwrap();
+        unsafe {
+            SimConnect_RequestJetwayData(
+                self.sim_connect_handle,
+                airport_icao.as_ptr(),
+                array_count,
+                indexes,
+            ) == 0
+        }
+    }
+
+    pub fn enumerate_controllers(&self) -> bool {
+        unsafe { SimConnect_EnumerateControllers(self.sim_connect_handle) == 0 }
+    }
+
+    pub fn map_input_event_to_client_event_ex1(
+        &self,
+        group_id: SIMCONNECT_INPUT_GROUP_ID,
+        input_definition: &str,
+        down_event: SIMCONNECT_CLIENT_EVENT_ID,
+        down_return_value: DWORD,
+        up_event: SIMCONNECT_CLIENT_EVENT_ID,
+        up_return_value: DWORD,
+        maskable: bool,
+    ) -> bool {
+        let input_definition = CString::new(input_definition).unwrap();
+
+        unsafe {
+            SimConnect_MapInputEventToClientEvent_EX1(
+                self.sim_connect_handle,
+                group_id,
+                input_definition.as_ptr(),
+                down_event,
+                down_return_value,
+                up_event,
+                up_return_value,
+                maskable as i32,
+            ) == 0
+        }
+    }
+
+    pub unsafe fn execute_action(
+        &self,
+        request_id: DWORD,
+        action_id: &str,
+        unit_size: DWORD,
+        param_values: *mut std::os::raw::c_void,
+    ) -> bool {
+        let action_id = CString::new(action_id).unwrap();
+        unsafe {
+            SimConnect_ExecuteAction(
+                self.sim_connect_handle,
+                request_id,
+                action_id.as_ptr(),
+                unit_size,
+                param_values,
+            ) == 0
+        }
+    }
+
+    pub fn enumerate_input_events(&self, request_id: SIMCONNECT_DATA_REQUEST_ID) -> bool {
+        unsafe { SimConnect_EnumerateInputEvents(self.sim_connect_handle, request_id) == 0 }
+    }
+
+    pub fn get_input_event(&self, request_id: SIMCONNECT_DATA_REQUEST_ID, hash: u64) -> bool {
+        unsafe { SimConnect_GetInputEvent(self.sim_connect_handle, request_id, hash) == 0 }
+    }
+
+    pub unsafe fn set_input_event(
+        &self,
+        hash: u64,
+        unit_size: DWORD,
+        value: *mut std::os::raw::c_void,
+    ) -> bool {
+        unsafe { SimConnect_SetInputEvent(self.sim_connect_handle, hash, unit_size, value) == 0 }
+    }
+
+    pub fn subscribe_input_event(&self, hash: u64) -> bool {
+        unsafe { SimConnect_SubscribeInputEvent(self.sim_connect_handle, hash) == 0 }
+    }
+
+    pub fn unsubscribe_input_event(&self, hash: u64) -> bool {
+        unsafe { SimConnect_UnsubscribeInputEvent(self.sim_connect_handle, hash) == 0 }
+    }
+
+    pub fn enumerate_input_event_params(&self, hash: u64) -> bool {
+        unsafe { SimConnect_EnumerateInputEventParams(self.sim_connect_handle, hash) == 0 }
+    }
+
+    pub fn add_facility_data_definition_filter(
+        &self,
+        define_id: SIMCONNECT_DATA_DEFINITION_ID,
+        filter_path: &str,
+        filter_data: *const std::os::raw::c_void,
+        cb_unit_size: DWORD,
+    ) -> bool {
+        let filter_path = CString::new(filter_path).unwrap();
+        unsafe {
+            SimConnect_AddFacilityDataDefinitionFilter(
+                self.sim_connect_handle,
+                define_id,
+                filter_path.as_ptr(),
+                cb_unit_size,
+                filter_data as *mut _,
+            ) == 0
+        }
+    }
+
+    pub fn clear_all_facility_data_definition_filters(
+        &self,
+        define_id: SIMCONNECT_DATA_DEFINITION_ID,
+    ) -> bool {
+        unsafe {
+            SimConnect_ClearAllFacilityDataDefinitionFilters(self.sim_connect_handle, define_id) == 0
+        }
+    }
+
+    /// Retrieves the next message from SimConnect. Nonblocking.
+    pub fn get_next_message(&self) -> Result<DispatchResult<'_>, &str> {
+        let mut data_buf: *mut SIMCONNECT_RECV = ptr::null_mut();
+        let mut size_buf: DWORD = 0;
         let size_buf_pointer: *mut DWORD = &mut size_buf;
 
         unsafe {
@@ -800,11 +1001,18 @@ impl SimConnector {
                 &mut data_buf,
                 size_buf_pointer,
             );
+
             if result != 0 {
                 return Err("Failed getting data!");
             }
 
-            return match (*data_buf).dwID as SIMCONNECT_RECV_ID {
+            // SimConnect_GetNextDispatch returns S_OK with a NULL pointer when the queue is empty.
+            // Dereferencing a null pointer would be UB, so we must check this explicitly.
+            if data_buf.is_null() {
+                return Ok(DispatchResult::Null);
+            }
+
+            match (*data_buf).dwID as SIMCONNECT_RECV_ID {
                 SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_NULL => Ok(DispatchResult::Null),
                 SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EXCEPTION => Ok(DispatchResult::Exception(
                     transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EXCEPTION)),
@@ -924,9 +1132,58 @@ impl SimConnector {
                         &(data_buf as *const SIMCONNECT_RECV_EVENT_RACE_LAP),
                     )))
                 }
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_EX1 => Ok(DispatchResult::EventEx1(
+                    transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EVENT_EX1)),
+                )),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_FACILITY_DATA => Ok(DispatchResult::FacilityData(
+                    transmute_copy(&(data_buf as *const SIMCONNECT_RECV_FACILITY_DATA)),
+                )),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_FACILITY_DATA_END => {
+                    Ok(DispatchResult::FacilityDataEnd(transmute_copy(
+                        &(data_buf as *const SIMCONNECT_RECV_FACILITY_DATA_END),
+                    )))
+                }
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_FACILITY_MINIMAL_LIST => {
+                    Ok(DispatchResult::FacilityMinimalList(transmute_copy(
+                        &(data_buf as *const SIMCONNECT_RECV_FACILITY_MINIMAL_LIST),
+                    )))
+                }
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_JETWAY_DATA => Ok(DispatchResult::JetwayData(
+                    transmute_copy(&(data_buf as *const SIMCONNECT_RECV_JETWAY_DATA)),
+                )),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CONTROLLERS_LIST => {
+                    Ok(DispatchResult::ControllersList(transmute_copy(
+                        &(data_buf as *const SIMCONNECT_RECV_CONTROLLERS_LIST),
+                    )))
+                }
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_ACTION_CALLBACK => {
+                    Ok(DispatchResult::ActionCallback(transmute_copy(
+                        &(data_buf as *const SIMCONNECT_RECV_ACTION_CALLBACK),
+                    )))
+                }
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_ENUMERATE_INPUT_EVENTS => {
+                    Ok(DispatchResult::EnumerateInputEvents(transmute_copy(
+                        &(data_buf as *const SIMCONNECT_RECV_ENUMERATE_INPUT_EVENTS),
+                    )))
+                }
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_GET_INPUT_EVENT => {
+                    Ok(DispatchResult::GetInputEvent(transmute_copy(
+                        &(data_buf as *const SIMCONNECT_RECV_GET_INPUT_EVENT),
+                    )))
+                }
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_SUBSCRIBE_INPUT_EVENT => {
+                    Ok(DispatchResult::SubscribeInputEvent(transmute_copy(
+                        &(data_buf as *const SIMCONNECT_RECV_SUBSCRIBE_INPUT_EVENT),
+                    )))
+                }
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_ENUMERATE_INPUT_EVENT_PARAMS => {
+                    Ok(DispatchResult::EnumerateInputEventParams(transmute_copy(
+                        &(data_buf as *const SIMCONNECT_RECV_ENUMERATE_INPUT_EVENT_PARAMS),
+                    )))
+                }
 
                 _ => Err("Unhandled RECV_ID"),
-            };
+            }
         }
     }
 }
