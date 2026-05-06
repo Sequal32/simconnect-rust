@@ -775,8 +775,11 @@ impl SimConnector {
     ) -> bool {
         let field_name = CString::new(field_name).unwrap();
         unsafe {
-            SimConnect_AddToFacilityDefinition(self.sim_connect_handle, define_id, field_name.as_ptr())
-                == 0
+            SimConnect_AddToFacilityDefinition(
+                self.sim_connect_handle,
+                define_id,
+                field_name.as_ptr(),
+            ) == 0
         }
     }
 
@@ -839,7 +842,8 @@ impl SimConnector {
         request_id: SIMCONNECT_DATA_REQUEST_ID,
     ) -> bool {
         unsafe {
-            SimConnect_RequestFacilitiesList_EX1(self.sim_connect_handle, list_type, request_id) == 0
+            SimConnect_RequestFacilitiesList_EX1(self.sim_connect_handle, list_type, request_id)
+                == 0
         }
     }
 
@@ -866,7 +870,7 @@ impl SimConnector {
         }
     }
 
-    pub fn request_jetway_data(
+    pub unsafe fn request_jetway_data(
         &self,
         airport_icao: &str,
         array_count: DWORD,
@@ -985,7 +989,8 @@ impl SimConnector {
         define_id: SIMCONNECT_DATA_DEFINITION_ID,
     ) -> bool {
         unsafe {
-            SimConnect_ClearAllFacilityDataDefinitionFilters(self.sim_connect_handle, define_id) == 0
+            SimConnect_ClearAllFacilityDataDefinitionFilters(self.sim_connect_handle, define_id)
+                == 0
         }
     }
 
@@ -1135,9 +1140,11 @@ impl SimConnector {
                 SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_EVENT_EX1 => Ok(DispatchResult::EventEx1(
                     transmute_copy(&(data_buf as *const SIMCONNECT_RECV_EVENT_EX1)),
                 )),
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_FACILITY_DATA => Ok(DispatchResult::FacilityData(
-                    transmute_copy(&(data_buf as *const SIMCONNECT_RECV_FACILITY_DATA)),
-                )),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_FACILITY_DATA => {
+                    Ok(DispatchResult::FacilityData(transmute_copy(
+                        &(data_buf as *const SIMCONNECT_RECV_FACILITY_DATA),
+                    )))
+                }
                 SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_FACILITY_DATA_END => {
                     Ok(DispatchResult::FacilityDataEnd(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_FACILITY_DATA_END),
@@ -1148,9 +1155,11 @@ impl SimConnector {
                         &(data_buf as *const SIMCONNECT_RECV_FACILITY_MINIMAL_LIST),
                     )))
                 }
-                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_JETWAY_DATA => Ok(DispatchResult::JetwayData(
-                    transmute_copy(&(data_buf as *const SIMCONNECT_RECV_JETWAY_DATA)),
-                )),
+                SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_JETWAY_DATA => {
+                    Ok(DispatchResult::JetwayData(transmute_copy(
+                        &(data_buf as *const SIMCONNECT_RECV_JETWAY_DATA),
+                    )))
+                }
                 SIMCONNECT_RECV_ID_SIMCONNECT_RECV_ID_CONTROLLERS_LIST => {
                     Ok(DispatchResult::ControllersList(transmute_copy(
                         &(data_buf as *const SIMCONNECT_RECV_CONTROLLERS_LIST),
