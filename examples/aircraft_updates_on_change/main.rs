@@ -1,4 +1,5 @@
 use simconnect::{DispatchResult, DWORD};
+use std::ptr::read_unaligned;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -12,18 +13,12 @@ struct KeyValuePairFloat {
     id: DWORD,
     value: f64,
 }
-struct DataFloatStruct {
-    data: [KeyValuePairFloat; MAX_RETURNED_ITEMS],
-}
+
 #[repr(C, packed)]
 struct KeyValuePairString {
     id: DWORD,
     // Strings get returned as max 255 bytes
-    value: [u8; 255],
-}
-
-struct DataStringStruct {
-    data: [KeyValuePairString; MAX_RETURNED_ITEMS],
+    value: [u8; MAX_RETURNED_ITEMS],
 }
 
 fn main() {
@@ -109,36 +104,34 @@ fn main() {
                     // Here we match the define_id we've passed using the request_data_on_sim_object
                     0 => {
                         let sim_data_ptr =
-                            std::ptr::addr_of!(data.dwData) as *const DataFloatStruct;
-                        let sim_data_value = std::ptr::read_unaligned(sim_data_ptr);
+                            std::ptr::addr_of!(data.dwData) as *const KeyValuePairFloat;
                         // The amount of floats received from the sim
                         let count = data.dwDefineCount as usize;
 
-                        // iterate through the array of data structs
-                        // To align the memory we have allocated an array of 255 elements to the datastruct
-                        // The game might return 255 or 2 values
-                        // To only iterate over valid elements in the array
-                        // We are able to leverage the dwDefineCount to loop over valid elements
+                        // Only read the values that SimConnect tells us were returned.
                         for i in 0..count {
-                            let value = sim_data_value.data[i].value;
-                            let key = sim_data_value.data[i].id;
-                            println!("{}", key);
+                            let item = read_unaligned(sim_data_ptr.add(i));
+                            let id = read_unaligned(std::ptr::addr_of!(item.id));
+                            let value = read_unaligned(std::ptr::addr_of!(item.value));
+                            println!("{}", id);
                             println!("{}", value);
                         }
                     }
                     1 => {
                         let sim_data_ptr =
-                            std::ptr::addr_of!(data.dwData) as *const DataStringStruct;
+                            std::ptr::addr_of!(data.dwData) as *const KeyValuePairString;
                         // The amount of strings received from the sim
                         let count = data.dwDefineCount as usize;
-                        let sim_data_value = std::ptr::read_unaligned(sim_data_ptr);
                         for i in 0..count {
-                            //since we only defined 1 string variable the key returned should be 4
-                            let key = sim_data_value.data[0].id;
-                            //byte array to string
+                            let item = read_unaligned(sim_data_ptr.add(i));
+                            let id = read_unaligned(std::ptr::addr_of!(item.id));
+                            let bytes: [u8; MAX_RETURNED_ITEMS] =
+                                read_unaligned(std::ptr::addr_of!(item.value));
+                            // Byte array to string, trimmed at the first NUL.
+                            let end = bytes.iter().position(|&b| b == 0).unwrap_or(bytes.len());
                             let string =
-                                std::str::from_utf8(&sim_data_value.data[i].value).unwrap();
-                            println!("{}", key);
+                                std::str::from_utf8(&bytes[..end]).unwrap_or("<invalid utf-8>");
+                            println!("{}", id);
                             println!("{}", string);
                         }
                     }
