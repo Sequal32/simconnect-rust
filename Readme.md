@@ -13,7 +13,7 @@ Add this to your `Cargo.toml`
 
 ```toml
 [dependencies]
-simconnect = "0.3.2"
+simconnect = "0.4"
 ```
 
 ## Building
