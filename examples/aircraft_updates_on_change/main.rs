@@ -1,9 +1,9 @@
-use simconnect::{DispatchResult, DWORD};
 use std::ptr::read_unaligned;
 use std::thread::sleep;
 use std::time::Duration;
+use simconnect::{DispatchResult, DWORD};
 
-// To allign the memory we have to set a fixed max size to the returned variables from the game
+// To align the memory we have to set a fixed max size to the returned variables from the game
 const MAX_RETURNED_ITEMS: usize = 255;
 
 // Rust will add padding to the inner parts of a struct if it isn't marked as packed
@@ -54,7 +54,7 @@ fn main() {
         simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64,
         3,
         100.0,
-    ); //define_id, units, data_type, datum_id, epsilon (update threshold)
+    ); // define_id, units, data_type, datum_id, epsilon (update threshold)
 
     // Here we define all our variabes that get returned as Strings
     // Notice how the define_id differs from the float values
@@ -82,7 +82,7 @@ fn main() {
         0,
         0,
         0,
-    ); //request_id, define_id, object_id (user), period, falgs, origin, interval, limit - tells simconnect to send data for the defined id and on the user aircraft
+    ); // request_id, define_id, object_id (user), period, flags, origin, interval, limit - tells simconnect to send data for the defined id and on the user aircraft
        // Request the data from our define_id 1 (strings)
        // The request_id has to differ from the float request. Or else it will overwrite the previous request
     conn.request_data_on_sim_object(
@@ -95,7 +95,7 @@ fn main() {
         0,
         0,
         0,
-    ); //request_id, define_id, object_id (user), period, falgs, origin, interval, limit - tells simconnect to send data for the defined id and on the user aircraft
+    ); // request_id, define_id, object_id (user), period, flags, origin, interval, limit - tells simconnect to send data for the defined id and on the user aircraft
 
     loop {
         match conn.get_next_message() {
