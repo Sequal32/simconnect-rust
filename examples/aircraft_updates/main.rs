@@ -1,6 +1,5 @@
 use std::thread::sleep;
 use std::time::Duration;
-
 use simconnect::DispatchResult;
 
 struct DataStruct {
@@ -8,9 +7,10 @@ struct DataStruct {
     lon: f64,
     alt: f64,
 }
+
 fn main() {
     let mut conn = simconnect::SimConnector::new();
-    conn.connect("Simple Program"); // Intialize connection with SimConnect
+    conn.connect("Simple Program"); // Initialize connection with SimConnect
     conn.add_data_definition(
         0,
         "PLANE LATITUDE",
@@ -34,7 +34,7 @@ fn main() {
         simconnect::SIMCONNECT_DATATYPE_SIMCONNECT_DATATYPE_FLOAT64,
         u32::MAX,
         1.0,
-    ); //define_id, units, data_type, datum_id, epsilon (update threshold)
+    ); // define_id, units, data_type, datum_id, epsilon (update threshold)
     conn.request_data_on_sim_object(
         0,
         0,
@@ -44,7 +44,7 @@ fn main() {
         0,
         0,
         0,
-    ); //request_id, define_id, object_id (user), period, falgs, origin, interval, limit - tells simconnect to send data for the defined id and on the user aircraft
+    ); // request_id, define_id, object_id (user), period, flags, origin, interval, limit - tells simconnect to send data for the defined id and on the user aircraft
 
     loop {
         match conn.get_next_message() {
