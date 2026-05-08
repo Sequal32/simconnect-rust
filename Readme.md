@@ -2,7 +2,7 @@
 
 # SimConnect Bindings for Rust
 
-This crate provides Rust bindings to send/receive information through SimConnect, for Microsoft Flight Simulator (2020).
+Send and receive information through SimConnect, for Microsoft Flight Simulator (2020).
 
 Documentation can be found at: [MSFS 2020 SDK](https://docs.flightsimulator.com/html/Programming_Tools/SimConnect/SimConnect_SDK.htm)
 
